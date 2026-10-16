@@ -1,0 +1,18 @@
+# docs (ローカル専用・リポジトリに含めない)
+docs/
+
+# IDE
+.idea/
+*.iml
+out/
+
+# Gradle / build
+.gradle/
+build/
+
+# Minecraft dev run
+run/
+
+# test用の一時ファイル
+test-*/
+*.test.local
