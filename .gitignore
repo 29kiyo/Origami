@@ -16,3 +16,8 @@ run/
 # test用の一時ファイル
 test-*/
 *.test.local
+
+# misc
+*.log
+.DS_Store
+Thumbs.db

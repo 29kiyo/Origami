@@ -1,0 +1,4 @@
+{
+  "log.init": "Origami %s を初期化しました。",
+  "log.unimplemented": "未実装の Bukkit API が呼ばれました: %s (警告は初回のみ)"
+}

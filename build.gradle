@@ -1,0 +1,53 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+base {
+    archivesName = project.archives_base_name
+}
+
+loom {
+    mods {
+        "origami" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    // バージョンは gradle.properties を参照。26.x は難読化なしのためマッピング指定は不要。
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+processResources {
+    def modVersion = project.version.toString()
+    inputs.property "version", modVersion
+
+    filesMatching("fabric.mod.json") {
+        expand "version": modVersion
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+// CI から -Prelease_tag=v1.0.0 が渡された場合は、jar 名の末尾にそのまま付ける
+tasks.withType(Jar).configureEach {
+    archiveVersion = providers.gradleProperty('release_tag').orElse(project.version.toString())
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}

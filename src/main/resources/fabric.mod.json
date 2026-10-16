@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "origami",
+  "version": "${version}",
+  "name": "Origami",
+  "description": "Runs Paper/Spigot plugins on Fabric through an API translation bridge.",
+  "authors": [
+    "29kiyo"
+  ],
+  "contact": {
+    "homepage": "https://github.com/29kiyo/Origami",
+    "sources": "https://github.com/29kiyo/Origami",
+    "issues": "https://github.com/29kiyo/Origami/issues"
+  },
+  "license": "GPL-3.0-only",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.kiyo29.origami.Origami"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
