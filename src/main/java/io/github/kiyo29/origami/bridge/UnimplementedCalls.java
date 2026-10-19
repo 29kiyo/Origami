@@ -31,14 +31,23 @@ public final class UnimplementedCalls {
 
     /** 呼び出しを記録し、呼び出し元がそのまま throw する例外を返す。 */
     public static UnsupportedOperationException exception(Method method) {
-        String signature = signature(method);
+        return exception(signature(method));
+    }
+
+    /** シグネチャ文字列版 (生成スタブ用)。 */
+    public static UnsupportedOperationException exception(String signature) {
+        note(signature);
+        return new UnsupportedOperationException("Not implemented by Origami: " + signature);
+    }
+
+    /** 例外を投げずに記録だけする (呼び出しを無視して続行する未対応 API 用)。 */
+    public static void note(String signature) {
         if (WARNED.add(signature)) {
             Origami.LOGGER.warn(Lang.tr("log.unimplemented", signature));
         }
         if (Origami.config().recordUnimplementedCalls) {
             COUNTS.computeIfAbsent(signature, k -> new LongAdder()).increment();
         }
-        return new UnsupportedOperationException("Not implemented by Origami: " + signature);
     }
 
     /** 記録した回数を多い順に JSON で書き出す。記録が無効、または空なら何もしない。 */
