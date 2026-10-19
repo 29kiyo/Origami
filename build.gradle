@@ -6,6 +6,14 @@ base {
     archivesName = project.archives_base_name
 }
 
+repositories {
+    mavenCentral()
+    maven {
+        name = 'PaperMC'
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+}
+
 loom {
     mods {
         "origami" {
@@ -19,6 +27,49 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+// --- paper-api ---
+// Loom の include は推移的依存を同梱しない。そのため同梱物は明示リストで管理する。
+//   compileOnly : paper-api (推移的依存あり)。コンパイル時に adventure などの型が見える必要がある
+//   runtimeOnly : runClient など開発実行用。transitive=false + 明示リスト (本番 jar と同じ中身にする)
+//   include     : 本番 jar への jar-in-jar 同梱。transitive=false + 明示リスト
+// MC 本体が同一バージョンで持つライブラリ (guava, gson, brigadier, fastutil, joml, log4j-api,
+// slf4j-api, jspecify) は同梱しない。MC 側のものを使う。
+// paper_api_version を上げたときは、次の手順で明示リストを見直すこと:
+//   ./gradlew dependencies --configuration compileClasspath
+//   ここに無い net.kyori / net.md-5 / org.yaml 系が増えていたら追加する
+def paperApi = "io.papermc.paper:paper-api:${project.paper_api_version}"
+
+def paperBundledLibs = [
+        paperApi,
+        "net.kyori:adventure-api:${project.adventure_version}",
+        "net.kyori:adventure-key:${project.adventure_version}",
+        "net.kyori:adventure-text-minimessage:${project.adventure_version}",
+        "net.kyori:adventure-text-serializer-gson:${project.adventure_version}",
+        "net.kyori:adventure-text-serializer-json:${project.adventure_version}",
+        "net.kyori:adventure-text-serializer-legacy:${project.adventure_version}",
+        "net.kyori:adventure-text-serializer-plain:${project.adventure_version}",
+        "net.kyori:adventure-text-logger-slf4j:${project.adventure_version}",
+        "net.kyori:option:${project.kyori_option_version}",
+        "net.md-5:bungeecord-chat:${project.bungeecord_chat_version}",
+        "org.yaml:snakeyaml:${project.snakeyaml_version}",
+]
+
+def paperCompileExcludeGroups = [
+        'com.google.guava', 'com.google.code.gson', 'com.mojang', 'it.unimi.dsi', 'org.joml',
+        'org.apache.logging.log4j', 'org.slf4j', 'org.jspecify',
+        'org.checkerframework',                           // アノテーションのみ
+        'org.apache.maven', 'org.apache.maven.resolver',  // plugin.yml の libraries: 解決用。Origami では使わない
+]
+
+project.dependencies.add('compileOnly', paperApi) { dep ->
+    paperCompileExcludeGroups.each { g -> dep.exclude(group: g) }
+}
+['runtimeOnly', 'include'].each { cfg ->
+    paperBundledLibs.each { coord ->
+        project.dependencies.add(cfg, coord) { dep -> dep.transitive = false }
+    }
 }
 
 processResources {
