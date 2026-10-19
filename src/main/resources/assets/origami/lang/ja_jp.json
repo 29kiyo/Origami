@@ -1,4 +1,8 @@
 {
   "log.init": "Origami %s を初期化しました。",
-  "log.unimplemented": "未実装の Bukkit API が呼ばれました: %s (警告は初回のみ)"
+  "log.unimplemented": "未実装の Bukkit API が呼ばれました: %s (警告は初回のみ)",
+  "log.unimplemented.summary": "未実装 API の呼び出し回数 %d 件を %s に書き出しました",
+  "log.server.attached": "Minecraft サーバーに接続しました (Bukkit ブリッジ準備完了)。",
+  "log.server.ready": "Bukkit.getServer() が利用可能です: %s",
+  "log.server.detached": "Minecraft サーバーから切り離しました。"
 }

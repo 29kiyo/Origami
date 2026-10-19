@@ -1,4 +1,8 @@
 {
   "log.init": "Origami %s initialized.",
-  "log.unimplemented": "Unimplemented Bukkit API called: %s (warning shown once)"
+  "log.unimplemented": "Unimplemented Bukkit API called: %s (warning shown once)",
+  "log.unimplemented.summary": "Wrote %d unimplemented API call counts to %s",
+  "log.server.attached": "Attached to the Minecraft server (Bukkit bridge ready).",
+  "log.server.ready": "Bukkit.getServer() is available: %s",
+  "log.server.detached": "Detached from the Minecraft server."
 }
