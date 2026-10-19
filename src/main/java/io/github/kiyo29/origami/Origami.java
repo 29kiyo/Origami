@@ -4,6 +4,7 @@ import io.github.kiyo29.origami.bridge.OrigamiServer;
 import io.github.kiyo29.origami.bridge.UnimplementedCalls;
 import io.github.kiyo29.origami.config.OrigamiConfig;
 import io.github.kiyo29.origami.internal.Lang;
+import io.github.kiyo29.origami.loader.PluginLifecycle;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -36,12 +37,24 @@ public final class Origami implements ModInitializer {
             }
             LOGGER.info(Lang.tr("log.server.attached"));
             LOGGER.info(Lang.tr("log.server.ready", Bukkit.getName() + " " + Bukkit.getVersion()));
+            runStep("load", PluginLifecycle::loadAndEnableStartup);
         });
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> runStep("enable", PluginLifecycle::enablePostWorld));
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> runStep("disable", PluginLifecycle::disableAll));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             OrigamiServer.get().detach();
             UnimplementedCalls.flush(FabricLoader.getInstance().getConfigDir().resolve("origami-unimplemented.json"));
             LOGGER.info(Lang.tr("log.server.detached"));
         });
+    }
+
+    /** プラグイン処理の失敗でサーバー本体の起動・停止を止めない。 */
+    private static void runStep(String name, Runnable step) {
+        try {
+            step.run();
+        } catch (Throwable t) {
+            LOGGER.error(Lang.tr("log.loader.lifecycle_failed", name), t);
+        }
     }
 
     public static OrigamiConfig config() {

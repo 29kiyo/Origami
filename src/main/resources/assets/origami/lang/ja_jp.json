@@ -8,5 +8,14 @@
   "log.loader.no_description": "%s に plugin.yml が含まれていません。",
   "log.loader.paper_plugin": "%s は paper-plugin.yml のみを使っており、まだ対応していません。",
   "log.loader.nms.rejected": "プラグイン %s は読み込みませんでした。Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。このようなプラグインは対象外です。",
-  "log.loader.nms.warned": "プラグイン %s は Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。実行時に失敗する可能性があります。"
+  "log.loader.nms.warned": "プラグイン %s は Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。実行時に失敗する可能性があります。",
+  "log.loader.scan_failed": "%s を飛ばしました: %s",
+  "log.loader.rejected": "プラグイン %s は読み込みませんでした: %s",
+  "log.loader.reason.missing_dep": "依存プラグインが見つかりません: %s",
+  "log.loader.reason.cycle": "依存関係が循環しています",
+  "log.loader.reason.duplicate": "同じ名前 %s のプラグインが既にあります",
+  "log.loader.load_failed": "%s を読み込めませんでした: %s",
+  "log.loader.onload_failed": "%s の onLoad でエラーが発生しました",
+  "log.loader.summary": "%d 個のプラグインを %s から読み込みました。",
+  "log.loader.lifecycle_failed": "プラグイン処理の段階で失敗しました: %s"
 }

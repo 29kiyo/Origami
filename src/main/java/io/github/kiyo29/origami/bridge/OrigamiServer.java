@@ -6,7 +6,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import org.bukkit.Server;
 import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.plugin.SimplePluginManager;
+import io.github.kiyo29.origami.loader.OrigamiPluginManager;
 import org.bukkit.plugin.SimpleServicesManager;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public final class OrigamiServer implements InvocationHandler {
     private final java.util.logging.Logger logger;
     private final Server proxy;
     private final SimpleCommandMap commandMap;
-    private final SimplePluginManager pluginManager;
+    private final OrigamiPluginManager pluginManager;
     private final SimpleServicesManager servicesManager;
     private volatile MinecraftServer minecraft;
 
@@ -51,9 +51,9 @@ public final class OrigamiServer implements InvocationHandler {
         this.logger = createLogger();
         this.proxy = (Server) Proxy.newProxyInstance(
                 Server.class.getClassLoader(), new Class<?>[] {Server.class}, this);
-        // SimpleCommandMap / SimplePluginManager は Server を要求するため、Proxy を作ってから構築する
+        // SimpleCommandMap / OrigamiPluginManager は Server を要求するため、Proxy を作ってから構築する
         this.commandMap = new SimpleCommandMap(proxy, new HashMap<>());
-        this.pluginManager = new SimplePluginManager(proxy, commandMap);
+        this.pluginManager = new OrigamiPluginManager(proxy, commandMap);
         this.servicesManager = new SimpleServicesManager();
     }
 
@@ -74,7 +74,7 @@ public final class OrigamiServer implements InvocationHandler {
         return commandMap;
     }
 
-    public SimplePluginManager pluginManager() {
+    public OrigamiPluginManager pluginManager() {
         return pluginManager;
     }
 
