@@ -4,5 +4,9 @@
   "log.unimplemented.summary": "Wrote %d unimplemented API call counts to %s",
   "log.server.attached": "Attached to the Minecraft server (Bukkit bridge ready).",
   "log.server.ready": "Bukkit.getServer() is available: %s",
-  "log.server.detached": "Detached from the Minecraft server."
+  "log.server.detached": "Detached from the Minecraft server.",
+  "log.loader.no_description": "%s does not contain plugin.yml.",
+  "log.loader.paper_plugin": "%s uses paper-plugin.yml only, which is not supported yet.",
+  "log.loader.nms.rejected": "Plugin %s was not loaded: it references Minecraft/CraftBukkit internals directly: %s. Such plugins are not supported.",
+  "log.loader.nms.warned": "Plugin %s references Minecraft/CraftBukkit internals directly: %s. It may fail at runtime."
 }

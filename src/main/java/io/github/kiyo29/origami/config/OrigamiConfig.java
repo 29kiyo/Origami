@@ -20,6 +20,8 @@ public final class OrigamiConfig {
     /** 未実装 Bukkit API の呼び出しを回数付きで記録する(デバッグ用) */
     public boolean recordUnimplementedCalls = false;
     public boolean debug = false;
+    /** NMS / CraftBukkit 直接依存のプラグインを見つけたときの動作: "error"(読み込み拒否) / "warn" / "off" */
+    public String nmsDetection = "error";
 
     public static OrigamiConfig load(Path path, Logger log) {
         OrigamiConfig cfg = new OrigamiConfig();

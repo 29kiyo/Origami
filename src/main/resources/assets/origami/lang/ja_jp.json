@@ -4,5 +4,9 @@
   "log.unimplemented.summary": "未実装 API の呼び出し回数 %d 件を %s に書き出しました",
   "log.server.attached": "Minecraft サーバーに接続しました (Bukkit ブリッジ準備完了)。",
   "log.server.ready": "Bukkit.getServer() が利用可能です: %s",
-  "log.server.detached": "Minecraft サーバーから切り離しました。"
+  "log.server.detached": "Minecraft サーバーから切り離しました。",
+  "log.loader.no_description": "%s に plugin.yml が含まれていません。",
+  "log.loader.paper_plugin": "%s は paper-plugin.yml のみを使っており、まだ対応していません。",
+  "log.loader.nms.rejected": "プラグイン %s は読み込みませんでした。Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。このようなプラグインは対象外です。",
+  "log.loader.nms.warned": "プラグイン %s は Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。実行時に失敗する可能性があります。"
 }
