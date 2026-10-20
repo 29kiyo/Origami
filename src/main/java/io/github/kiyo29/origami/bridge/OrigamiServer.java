@@ -1,12 +1,22 @@
 package io.github.kiyo29.origami.bridge;
 
+import io.github.kiyo29.origami.bridge.command.CommandBridge;
+import io.github.kiyo29.origami.bridge.command.ConsoleSenderBridge;
+import io.github.kiyo29.origami.bridge.command.OrigamiCommandMap;
+import io.github.kiyo29.origami.bridge.entity.PlayerBridge;
 import io.github.kiyo29.origami.internal.JulToSlf4jHandler;
 import io.github.kiyo29.origami.internal.Versions;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
 import org.bukkit.Server;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import io.github.kiyo29.origami.loader.OrigamiPluginManager;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.SimpleServicesManager;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +25,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 
 /**
@@ -52,7 +63,7 @@ public final class OrigamiServer implements InvocationHandler {
         this.proxy = (Server) Proxy.newProxyInstance(
                 Server.class.getClassLoader(), new Class<?>[] {Server.class}, this);
         // SimpleCommandMap / OrigamiPluginManager は Server を要求するため、Proxy を作ってから構築する
-        this.commandMap = new SimpleCommandMap(proxy, new HashMap<>());
+        this.commandMap = new OrigamiCommandMap(proxy);
         this.pluginManager = new OrigamiPluginManager(proxy, commandMap);
         this.servicesManager = new SimpleServicesManager();
     }
@@ -103,7 +114,7 @@ public final class OrigamiServer implements InvocationHandler {
                 default -> throw new UnsupportedOperationException(method.getName());
             };
         }
-        Object result = implemented(method);
+        Object result = implemented(method, args);
         if (result != UNHANDLED) {
             return result;
         }
@@ -113,29 +124,74 @@ public final class OrigamiServer implements InvocationHandler {
         throw UnimplementedCalls.exception(method);
     }
 
-    /** 引数なしの実装済みメソッド。引数ありのオーバーロードは UNHANDLED のまま未実装として扱う。 */
-    private Object implemented(Method method) {
-        if (method.getParameterCount() != 0) {
-            return UNHANDLED;
-        }
+    /** 実装済みメソッド。扱わないものは UNHANDLED (null は「結果が null」の意味)。 */
+    private Object implemented(Method method, Object[] args) {
         MinecraftServer s = minecraft;
+        // SERVER_STARTING は dedicated では initServer の前なので、PlayerList は null のことがある
+        PlayerList list = s == null ? null : s.getPlayerList();
+        if (method.getParameterCount() == 0) {
+            return switch (method.getName()) {
+                case "getName" -> "Origami";
+                case "getVersion" -> version;
+                // 暫定値。EssentialsX 等が形式を解析する可能性があるため Phase 8 で確定する
+                case "getBukkitVersion" -> minecraftVersion + "-R0.1-SNAPSHOT";
+                case "getMinecraftVersion" -> minecraftVersion;
+                case "getLogger" -> logger;
+                case "getPluginsFolder" -> FabricLoader.getInstance().getGameDir().resolve("plugins").toFile();
+                case "getPluginManager" -> pluginManager;
+                case "getServicesManager" -> servicesManager;
+                case "getCommandMap" -> commandMap;
+                case "getConsoleSender" -> ConsoleSenderBridge.console();
+                case "getCommandAliases" -> new HashMap<String, String[]>();
+                case "getOnlinePlayers" -> list == null
+                        ? List.<Player>of()
+                        : list.getPlayers().stream().map(PlayerBridge::of).toList();
+                // World のブリッジは Phase 6。それまでは空
+                case "getWorlds" -> List.of();
+                case "getPort" -> s == null ? -1 : s.getPort();
+                case "getMaxPlayers" -> list == null ? 0 : list.getMaxPlayers();
+                case "isPrimaryThread" -> s != null && s.isSameThread();
+                default -> UNHANDLED;
+            };
+        }
+        Object first = args[0];
         return switch (method.getName()) {
-            case "getName" -> "Origami";
-            case "getVersion" -> version;
-            // 暫定値。EssentialsX 等が形式を解析する可能性があるため Phase 8 で確定する
-            case "getBukkitVersion" -> minecraftVersion + "-R0.1-SNAPSHOT";
-            case "getMinecraftVersion" -> minecraftVersion;
-            case "getLogger" -> logger;
-            case "getPluginsFolder" -> FabricLoader.getInstance().getGameDir().resolve("plugins").toFile();
-            case "getPluginManager" -> pluginManager;
-            case "getServicesManager" -> servicesManager;
-            case "getCommandMap" -> commandMap;
-            // Player / World のブリッジは Phase 6。それまでは空
-            case "getOnlinePlayers", "getWorlds" -> List.of();
-            case "getPort" -> s == null ? -1 : s.getPort();
-            case "getMaxPlayers" -> s == null ? 0 : s.getPlayerList().getMaxPlayers();
-            case "isPrimaryThread" -> s != null && s.isSameThread();
+            case "getPluginCommand" -> {
+                Command command = commandMap.getCommand((String) first);
+                yield command instanceof PluginCommand pluginCommand ? pluginCommand : null;
+            }
+            case "dispatchCommand" -> dispatchCommand((CommandSender) first, (String) args[1]);
+            // Bukkit の getPlayer(String) は部分一致だが、現状は完全一致のみ (Phase 6 で見直す)
+            case "getPlayer" -> first instanceof UUID id ? playerById(list, id) : playerByName(list, (String) first);
+            case "getPlayerExact" -> playerByName(list, (String) first);
             default -> UNHANDLED;
         };
+    }
+
+    private static Player playerById(PlayerList list, UUID id) {
+        ServerPlayer player = list == null ? null : list.getPlayer(id);
+        return player == null ? null : PlayerBridge.of(player);
+    }
+
+    private static Player playerByName(PlayerList list, String name) {
+        ServerPlayer player = list == null ? null : list.getPlayerByName(name);
+        return player == null ? null : PlayerBridge.of(player);
+    }
+
+    /** Bukkit のコマンドを先に試し、無ければバニラのコマンドとして実行する (バニラの結果は成否を返せないため true)。 */
+    private boolean dispatchCommand(CommandSender sender, String line) {
+        MinecraftServer s = minecraft;
+        if (s == null) {
+            return false;
+        }
+        if (!s.isSameThread()) {
+            throw new IllegalStateException("Command dispatched async: " + line);
+        }
+        String command = line.startsWith("/") ? line.substring(1) : line;
+        if (commandMap.dispatch(sender, command)) {
+            return true;
+        }
+        s.getCommands().performPrefixedCommand(CommandBridge.stackOf(s, sender), command);
+        return true;
     }
 }

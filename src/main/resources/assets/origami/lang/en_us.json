@@ -17,5 +17,9 @@
   "log.loader.load_failed": "Could not load %s: %s",
   "log.loader.onload_failed": "Error in onLoad of %s",
   "log.loader.summary": "Loaded %d plugin(s) from %s.",
-  "log.loader.lifecycle_failed": "Plugin lifecycle step failed: %s"
+  "log.loader.lifecycle_failed": "Plugin lifecycle step failed: %s",
+  "command.error": "An internal error occurred while attempting to perform this command.",
+  "log.command.register_failed": "Could not register the commands of %s",
+  "log.command.perm_duplicate": "Plugin %s tried to register permission %s, but it is already registered.",
+  "log.command.conflict": "Command /%s (plugin %s) was not exposed as a Minecraft command: a command with the same name already exists. Use the namespaced form instead."
 }

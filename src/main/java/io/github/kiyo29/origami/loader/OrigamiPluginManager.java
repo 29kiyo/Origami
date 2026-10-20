@@ -9,6 +9,9 @@ import io.papermc.paper.plugin.PermissionManager;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
+import org.bukkit.command.Command;
+import org.bukkit.command.PluginCommandYamlParser;
+import org.bukkit.command.PluginIdentifiableCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -49,7 +52,7 @@ import java.util.logging.Level;
 /**
  * PluginManager の Origami 実装 (paper-api の SimplePluginManager は Paper 内部の実装へ委譲するため使えない)。
  * プラグイン管理・イベント・権限を自前で持つ。HandlerList / RegisteredListener は paper-api のものをそのまま使う。
- * plugin.yml の commands 登録は Phase 4 で追加する (commandMap はそのために保持している)。
+ * plugin.yml の commands / permissions は enablePlugin / disablePlugin で登録・解除する。
  */
 @SuppressWarnings({"deprecation", "removal"})
 public final class OrigamiPluginManager implements PluginManager {
@@ -164,10 +167,14 @@ public final class OrigamiPluginManager implements PluginManager {
             return;
         }
         try {
+            registerCommands(plugin);
             loader.enablePlugin(plugin);
         } catch (Throwable t) {
             server.getLogger().log(Level.SEVERE, "Error occurred while enabling "
                     + plugin.getDescription().getFullName() + " (Is it up to date?)", t);
+        }
+        if (plugin.isEnabled()) {
+            registerPermissions(plugin);
         }
         HandlerList.bakeAll();
     }
@@ -195,7 +202,9 @@ public final class OrigamiPluginManager implements PluginManager {
             server.getLogger().log(Level.SEVERE, "Error occurred while unregistering events of "
                     + plugin.getDescription().getFullName(), t);
         }
-        // スケジューラのタスク解放は Phase 7、コマンドの登録解除は Phase 4
+        unregisterCommands(plugin);
+        unregisterPermissions(plugin);
+        // スケジューラのタスク解放は Phase 7
     }
 
     @Override
@@ -247,6 +256,59 @@ public final class OrigamiPluginManager implements PluginManager {
             }
         }
         return false;
+    }
+
+    // ---- plugin.yml の commands / permissions ----
+
+    /** Bukkit と同じく onEnable の前に plugin.yml の commands を登録する (onEnable で getCommand できるように)。 */
+    private void registerCommands(Plugin plugin) {
+        try {
+            List<Command> commands = PluginCommandYamlParser.parse(plugin);
+            if (!commands.isEmpty()) {
+                commandMap.registerAll(plugin.getDescription().getName(), commands);
+            }
+        } catch (Throwable t) {
+            Origami.LOGGER.error(Lang.tr("log.command.register_failed", plugin.getName()), t);
+        }
+    }
+
+    /** そのプラグインのコマンドを commandMap から外す。Brigadier 側のノードは requires が false になって使えなくなる。 */
+    private void unregisterCommands(Plugin plugin) {
+        try {
+            commandMap.getKnownCommands().values().removeIf(command -> {
+                if (command instanceof PluginIdentifiableCommand owner && owner.getPlugin() == plugin) {
+                    command.unregister(commandMap);
+                    return true;
+                }
+                return false;
+            });
+        } catch (Throwable t) {
+            server.getLogger().log(Level.SEVERE, "Error occurred while unregistering commands of "
+                    + plugin.getDescription().getFullName(), t);
+        }
+    }
+
+    /** CraftServer#loadPlugin 相当: 有効化後に plugin.yml の permissions を登録する。 */
+    private void registerPermissions(Plugin plugin) {
+        for (Permission perm : plugin.getDescription().getPermissions()) {
+            try {
+                addPermission(perm, false);
+            } catch (IllegalArgumentException ex) {
+                Origami.LOGGER.warn(Lang.tr("log.command.perm_duplicate", plugin.getName(), perm.getName()));
+            }
+        }
+        dirtyPermissibles(true);
+        dirtyPermissibles(false);
+    }
+
+    private void unregisterPermissions(Plugin plugin) {
+        for (Permission perm : plugin.getDescription().getPermissions()) {
+            defaultPerms.get(true).remove(perm);
+            defaultPerms.get(false).remove(perm);
+            removePermission(perm);
+        }
+        dirtyPermissibles(true);
+        dirtyPermissibles(false);
     }
 
     // ---- イベント ----

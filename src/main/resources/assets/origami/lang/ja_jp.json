@@ -17,5 +17,9 @@
   "log.loader.load_failed": "%s を読み込めませんでした: %s",
   "log.loader.onload_failed": "%s の onLoad でエラーが発生しました",
   "log.loader.summary": "%d 個のプラグインを %s から読み込みました。",
-  "log.loader.lifecycle_failed": "プラグイン処理の段階で失敗しました: %s"
+  "log.loader.lifecycle_failed": "プラグイン処理の段階で失敗しました: %s",
+  "command.error": "このコマンドの実行中に内部エラーが発生しました。",
+  "log.command.register_failed": "%s のコマンドを登録できませんでした",
+  "log.command.perm_duplicate": "プラグイン %s が権限 %s を登録しようとしましたが、すでに登録されています。",
+  "log.command.conflict": "コマンド /%s (プラグイン %s) は、同名のコマンドがすでにあるため Minecraft のコマンドとして公開しませんでした。名前空間つきの形式を使ってください。"
 }
