@@ -10,7 +10,9 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
+import io.github.kiyo29.origami.bridge.command.OrigamiHelpMap;
 import org.bukkit.Server;
+import org.bukkit.Warning;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
@@ -47,6 +49,7 @@ public final class OrigamiServer implements InvocationHandler {
     private final SimpleCommandMap commandMap;
     private final OrigamiPluginManager pluginManager;
     private final SimpleServicesManager servicesManager;
+    private final OrigamiHelpMap helpMap = new OrigamiHelpMap();
     private volatile MinecraftServer minecraft;
 
     public static synchronized OrigamiServer get() {
@@ -143,6 +146,9 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getCommandMap" -> commandMap;
                 case "getConsoleSender" -> ConsoleSenderBridge.console();
                 case "getCommandAliases" -> new HashMap<String, String[]>();
+                case "getHelpMap" -> helpMap;
+                // 非推奨イベントの警告出力は未対応。DEFAULT は Spigot の既定と同じ (Warning#value に従う)
+                case "getWarningState" -> Warning.WarningState.DEFAULT;
                 case "getOnlinePlayers" -> list == null
                         ? List.<Player>of()
                         : list.getPlayers().stream().map(PlayerBridge::of).toList();
