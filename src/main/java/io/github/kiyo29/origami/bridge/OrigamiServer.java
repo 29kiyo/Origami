@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -147,6 +148,8 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getConsoleSender" -> ConsoleSenderBridge.console();
                 case "getCommandAliases" -> new HashMap<String, String[]>();
                 case "getHelpMap" -> helpMap;
+                // ForwardingAudience の土台。Server#sendMessage / sendPlainMessage などの default が使う
+                case "audiences" -> audiences(list);
                 // 非推奨イベントの警告出力は未対応。DEFAULT は Spigot の既定と同じ (Warning#value に従う)
                 case "getWarningState" -> Warning.WarningState.DEFAULT;
                 case "getOnlinePlayers" -> list == null
@@ -170,8 +173,43 @@ public final class OrigamiServer implements InvocationHandler {
             // Bukkit の getPlayer(String) は部分一致だが、現状は完全一致のみ (Phase 6 で見直す)
             case "getPlayer" -> first instanceof UUID id ? playerById(list, id) : playerByName(list, (String) first);
             case "getPlayerExact" -> playerByName(list, (String) first);
+            case "broadcast" -> method.getParameterCount() == 2
+                    && method.getParameterTypes()[0] == net.kyori.adventure.text.Component.class
+                    ? broadcastTo(list, (net.kyori.adventure.text.Component) first, (String) args[1])
+                    : UNHANDLED;
             default -> UNHANDLED;
         };
+    }
+
+    private static java.util.List<net.kyori.adventure.audience.Audience> audiences(PlayerList list) {
+        java.util.List<net.kyori.adventure.audience.Audience> result = new ArrayList<>();
+        result.add(ConsoleSenderBridge.console());
+        if (list != null) {
+            for (ServerPlayer player : list.getPlayers()) {
+                result.add(PlayerBridge.of(player));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * コンソールには常に送る。プレイヤーは bukkit.broadcast.user なら全員 (本物の Bukkit では default: true の権限だが
+     * Origami には未登録のため特別扱い)、それ以外の権限は hasPermission で判定する。戻り値は受信者数。
+     */
+    private static int broadcastTo(PlayerList list, net.kyori.adventure.text.Component message, String permission) {
+        int count = 0;
+        ConsoleSenderBridge.console().sendMessage(message);
+        count++;
+        if (list != null) {
+            for (ServerPlayer serverPlayer : new ArrayList<>(list.getPlayers())) {
+                Player player = PlayerBridge.of(serverPlayer);
+                if (Server.BROADCAST_CHANNEL_USERS.equals(permission) || player.hasPermission(permission)) {
+                    player.sendMessage(message);
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     private static Player playerById(PlayerList list, UUID id) {
