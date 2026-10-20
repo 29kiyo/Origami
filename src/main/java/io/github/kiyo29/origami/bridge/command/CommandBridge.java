@@ -113,7 +113,46 @@ public final class CommandBridge {
         }
     }
 
+    /**
+     * Bukkit コマンドの実行入口。Bukkit コマンドに限り PlayerCommandPreprocessEvent (プレイヤー) /
+     * ServerCommandEvent (それ以外) を発火する。バニラのコマンドには発火しない (Mixin を使わないため)。
+     */
     private static int run(CommandSourceStack source, String label, String args) {
+        String line = args.isEmpty() ? label : label + " " + args;
+        try {
+            net.minecraft.server.level.ServerPlayer sp = source.getPlayer();
+            if (sp != null) {
+                org.bukkit.event.player.PlayerCommandPreprocessEvent event =
+                        new org.bukkit.event.player.PlayerCommandPreprocessEvent(
+                                io.github.kiyo29.origami.bridge.entity.PlayerBridge.of(sp), "/" + line);
+                OrigamiServer.get().pluginManager().callEvent(event);
+                if (event.isCancelled()) {
+                    return 1;
+                }
+                line = event.getMessage().startsWith("/") ? event.getMessage().substring(1) : event.getMessage();
+            } else {
+                org.bukkit.event.server.ServerCommandEvent event =
+                        new org.bukkit.event.server.ServerCommandEvent(senderOf(source), line);
+                OrigamiServer.get().pluginManager().callEvent(event);
+                if (event.isCancelled()) {
+                    return 1;
+                }
+                line = event.getCommand();
+            }
+        } catch (Throwable t) {
+            Origami.LOGGER.error("Error while firing command event for /" + line, t);
+        }
+        line = line.trim();
+        if (line.isEmpty()) {
+            return 1;
+        }
+        int space = line.indexOf(' ');
+        String newLabel = space < 0 ? line : line.substring(0, space);
+        String newArgs = space < 0 ? "" : line.substring(space + 1);
+        return runDispatch(source, newLabel, newArgs);
+    }
+
+    private static int runDispatch(CommandSourceStack source, String label, String args) {
         CommandSender sender = senderOf(source);
         String line = args.isEmpty() ? label : label + " " + args;
         try {

@@ -37,6 +37,14 @@ public final class PlayerBridge extends SenderBase {
                 Player.class.getClassLoader(), new Class<?>[] {Player.class}, this);
     }
 
+    /** 退出時にキャッシュから外す。別の ServerPlayer に差し替わっていたら外さない。 */
+    public static void release(ServerPlayer player) {
+        CACHE.computeIfPresent(player.getUUID(), (id, b) -> {
+            ServerPlayer current = b.ref.get();
+            return current == null || current == player ? null : b;
+        });
+    }
+
     public static Player of(ServerPlayer player) {
         CACHE.values().removeIf(b -> b.ref.get() == null);
         PlayerBridge bridge = CACHE.computeIfAbsent(player.getUUID(), id -> new PlayerBridge(player));

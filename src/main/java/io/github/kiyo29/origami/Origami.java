@@ -2,6 +2,7 @@ package io.github.kiyo29.origami;
 
 import io.github.kiyo29.origami.bridge.OrigamiServer;
 import io.github.kiyo29.origami.bridge.UnimplementedCalls;
+import io.github.kiyo29.origami.bridge.event.EventBridge;
 import io.github.kiyo29.origami.bridge.command.CommandBridge;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
@@ -25,6 +26,7 @@ public final class Origami implements ModInitializer {
     public void onInitialize() {
         config = OrigamiConfig.load(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json"), LOGGER);
         Lang.init(config.language);
+        EventBridge.register();
 
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
                 .map(c -> c.getMetadata().getVersion().getFriendlyString())
