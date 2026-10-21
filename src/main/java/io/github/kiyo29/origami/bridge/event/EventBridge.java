@@ -6,6 +6,10 @@ import io.github.kiyo29.origami.bridge.command.ConsoleSenderBridge;
 import io.github.kiyo29.origami.bridge.entity.PlayerBridge;
 import io.papermc.paper.chat.ChatRenderer;
 import io.papermc.paper.event.player.AsyncChatEvent;
+import io.github.kiyo29.origami.bridge.world.LevelBridge;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityLevelChangeEvents;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.kyori.adventure.audience.Audience;
@@ -47,6 +51,15 @@ public final class EventBridge {
         ServerPlayerEvents.JOIN.register(EventBridge::onJoin);
         ServerPlayerEvents.LEAVE.register(EventBridge::onLeave);
         ServerMessageEvents.ALLOW_CHAT_MESSAGE.register(EventBridge::onAllowChat);
+        ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, origin, destination) ->
+                fire(new PlayerChangedWorldEvent(PlayerBridge.of(player), LevelBridge.of(origin))));
+        // Fired after the respawn, so the respawn location cannot be changed (partial). Bed / anchor / missing-spawn flags are always false. alive=true is END_PORTAL, otherwise DEATH.
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                fire(new PlayerRespawnEvent(PlayerBridge.of(newPlayer),
+                        LevelBridge.location(newPlayer.level(), newPlayer.getX(), newPlayer.getY(), newPlayer.getZ(),
+                                newPlayer.getYRot(), newPlayer.getXRot()),
+                        false, false, false,
+                        alive ? PlayerRespawnEvent.RespawnReason.END_PORTAL : PlayerRespawnEvent.RespawnReason.DEATH)));
     }
 
     private static void onJoin(ServerPlayer serverPlayer) {

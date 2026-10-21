@@ -4,6 +4,7 @@ import io.github.kiyo29.origami.bridge.command.CommandBridge;
 import io.github.kiyo29.origami.bridge.command.ConsoleSenderBridge;
 import io.github.kiyo29.origami.bridge.command.OrigamiCommandMap;
 import io.github.kiyo29.origami.bridge.entity.PlayerBridge;
+import io.github.kiyo29.origami.bridge.world.LevelBridge;
 import io.github.kiyo29.origami.internal.JulToSlf4jHandler;
 import io.github.kiyo29.origami.internal.Versions;
 import net.fabricmc.loader.api.FabricLoader;
@@ -155,8 +156,9 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getOnlinePlayers" -> list == null
                         ? List.<Player>of()
                         : list.getPlayers().stream().map(PlayerBridge::of).toList();
-                // World のブリッジは Phase 6。それまでは空
-                case "getWorlds" -> List.of();
+                case "getWorlds" -> LevelBridge.all();
+                case "getUnsafe" -> ServerExtras.unsafe();
+                case "getMessenger" -> ServerExtras.messenger();
                 case "getPort" -> s == null ? -1 : s.getPort();
                 case "getMaxPlayers" -> list == null ? 0 : list.getMaxPlayers();
                 case "isPrimaryThread" -> s != null && s.isSameThread();
@@ -173,6 +175,10 @@ public final class OrigamiServer implements InvocationHandler {
             // Bukkit の getPlayer(String) は部分一致だが、現状は完全一致のみ (Phase 6 で見直す)
             case "getPlayer" -> first instanceof UUID id ? playerById(list, id) : playerByName(list, (String) first);
             case "getPlayerExact" -> playerByName(list, (String) first);
+            case "getWorld" -> first instanceof String worldName ? LevelBridge.byName(worldName)
+                    : first instanceof UUID worldId ? LevelBridge.byId(worldId) : UNHANDLED;
+            case "getSpawnLimit" -> ServerExtras.spawnLimit((org.bukkit.entity.SpawnCategory) first);
+            case "getTicksPerSpawns" -> ServerExtras.ticksPerSpawns((org.bukkit.entity.SpawnCategory) first);
             case "broadcast" -> method.getParameterCount() == 2
                     && method.getParameterTypes()[0] == net.kyori.adventure.text.Component.class
                     ? broadcastTo(list, (net.kyori.adventure.text.Component) first, (String) args[1])
