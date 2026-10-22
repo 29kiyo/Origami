@@ -4,6 +4,8 @@ import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.Keyed;
 import org.bukkit.Registry;
+import org.bukkit.block.BlockType;
+import org.bukkit.inventory.ItemType;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -15,10 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
- * Minimal RegistryAccess (loaded by paper-api through ServiceLoader).
- * Its only job right now is to let org.bukkit.Registry finish its static initializer.
- * Every registry returned here is empty: get() returns null, stream() is empty.
- * Real BLOCK / ITEM registries are planned for Phase 8.
+ * RegistryAccess (loaded by paper-api through ServiceLoader).
+ * Phase 8: ITEM and BLOCK are real (read-only, see TypeRegistries).
+ * Every other registry is still empty: get() returns null, stream() is empty.
  */
 public final class RegistryAccessBridge implements RegistryAccess {
     private static final Map<Object, Registry<?>> CACHE = new ConcurrentHashMap<>();
@@ -29,12 +30,25 @@ public final class RegistryAccessBridge implements RegistryAccess {
     @Override
     @SuppressWarnings("removal")
     public <T extends Keyed> Registry<T> getRegistry(Class<T> type) {
+        if (type == ItemType.class) {
+            return cast(TypeRegistries.registry(TypeRegistries.Kind.ITEM));
+        }
+        if (type == BlockType.class) {
+            return cast(TypeRegistries.registry(TypeRegistries.Kind.BLOCK));
+        }
         return cast(CACHE.computeIfAbsent(type, k -> create(type.getSimpleName())));
     }
 
     @Override
     public <T extends Keyed> Registry<T> getRegistry(RegistryKey<T> key) {
-        return cast(CACHE.computeIfAbsent(key, k -> create(String.valueOf(key.key()))));
+        String id = key.key().asString();
+        if (id.equals("minecraft:item")) {
+            return cast(TypeRegistries.registry(TypeRegistries.Kind.ITEM));
+        }
+        if (id.equals("minecraft:block")) {
+            return cast(TypeRegistries.registry(TypeRegistries.Kind.BLOCK));
+        }
+        return cast(CACHE.computeIfAbsent(key, k -> create(id)));
     }
 
     @SuppressWarnings("unchecked")
