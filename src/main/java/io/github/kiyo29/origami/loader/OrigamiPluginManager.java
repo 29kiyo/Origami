@@ -204,7 +204,12 @@ public final class OrigamiPluginManager implements PluginManager {
         }
         unregisterCommands(plugin);
         unregisterPermissions(plugin);
-        // スケジューラのタスク解放は Phase 7
+        try {
+            io.github.kiyo29.origami.bridge.scheduler.OrigamiScheduler.get().cancelTasks(plugin);
+        } catch (Throwable t) {
+            server.getLogger().log(Level.SEVERE, "Error occurred while cancelling tasks of "
+                    + plugin.getDescription().getFullName(), t);
+        }
     }
 
     @Override

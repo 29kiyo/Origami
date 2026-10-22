@@ -10,6 +10,7 @@
   "log.loader.nms.rejected": "Plugin %s was not loaded: it references Minecraft/CraftBukkit internals directly: %s. Such plugins are not supported.",
   "log.loader.nms.warned": "Plugin %s references Minecraft/CraftBukkit internals directly: %s. It may fail at runtime.",
   "log.loader.scan_failed": "Skipped %s: %s",
+  "log.scheduler.stop_timeout": "Async tasks did not finish within %s seconds at shutdown; interrupting them.",
   "log.loader.rejected": "Plugin %s was not loaded: %s",
   "log.loader.reason.missing_dep": "missing dependencies: %s",
   "log.loader.reason.cycle": "circular dependency",

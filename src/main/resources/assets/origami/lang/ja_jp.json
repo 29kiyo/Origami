@@ -10,6 +10,7 @@
   "log.loader.nms.rejected": "プラグイン %s は読み込みませんでした。Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。このようなプラグインは対象外です。",
   "log.loader.nms.warned": "プラグイン %s は Minecraft/CraftBukkit の内部クラスを直接参照しています: %s。実行時に失敗する可能性があります。",
   "log.loader.scan_failed": "%s を飛ばしました: %s",
+  "log.scheduler.stop_timeout": "非同期タスクが停止時に %s 秒以内に終了しなかったため、中断します。",
   "log.loader.rejected": "プラグイン %s は読み込みませんでした: %s",
   "log.loader.reason.missing_dep": "依存プラグインが見つかりません: %s",
   "log.loader.reason.cycle": "依存関係が循環しています",

@@ -3,6 +3,7 @@ package io.github.kiyo29.origami;
 import io.github.kiyo29.origami.bridge.OrigamiServer;
 import io.github.kiyo29.origami.bridge.UnimplementedCalls;
 import io.github.kiyo29.origami.bridge.event.EventBridge;
+import io.github.kiyo29.origami.bridge.scheduler.OrigamiScheduler;
 import io.github.kiyo29.origami.bridge.command.CommandBridge;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
@@ -11,6 +12,7 @@ import io.github.kiyo29.origami.internal.Lang;
 import io.github.kiyo29.origami.loader.PluginLifecycle;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import org.bukkit.Bukkit;
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ public final class Origami implements ModInitializer {
         config = OrigamiConfig.load(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json"), LOGGER);
         Lang.init(config.language);
         EventBridge.register();
+        ServerTickEvents.START_SERVER_TICK.register(server -> OrigamiScheduler.get().heartbeat());
 
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
                 .map(c -> c.getMetadata().getVersion().getFriendlyString())
@@ -52,12 +55,14 @@ public final class Origami implements ModInitializer {
             LOGGER.info(Lang.tr("log.server.attached"));
             LOGGER.info(Lang.tr("log.server.ready", Bukkit.getName() + " " + Bukkit.getVersion()));
             CommandBridge.bind(server.getCommands().getDispatcher());
+            OrigamiScheduler.get().start();
             runStep("load", PluginLifecycle::loadAndEnableStartup);
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> runStep("enable", PluginLifecycle::enablePostWorld));
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> runStep("disable", PluginLifecycle::disableAll));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             CommandBridge.unbind();
+            runStep("scheduler", () -> OrigamiScheduler.get().stop());
             OrigamiServer.get().detach();
             UnimplementedCalls.flush(FabricLoader.getInstance().getConfigDir().resolve("origami-unimplemented.json"));
             LOGGER.info(Lang.tr("log.server.detached"));
