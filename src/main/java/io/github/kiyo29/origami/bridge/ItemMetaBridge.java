@@ -178,7 +178,7 @@ final class ItemMetaBridge {
             h.set(DataComponents.CUSTOM_NAME, toMc(s.name));
         }
         if (s.lore == null || s.lore.isEmpty()) {
-            h.remove(DataComponents.LORE);
+            h.set(DataComponents.LORE, ItemLore.EMPTY);
         } else {
             List<net.minecraft.network.chat.Component> lines = new ArrayList<>();
             for (Component c : s.lore) {
@@ -204,7 +204,7 @@ final class ItemMetaBridge {
                     new CustomModelData(List.of(Float.valueOf(s.customModelData)), List.of(), List.of(), List.of()));
         }
         if (s.enchants.isEmpty()) {
-            h.remove(DataComponents.ENCHANTMENTS);
+            h.set(DataComponents.ENCHANTMENTS, net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
         } else {
             Map<Enchantment, Integer> want = new LinkedHashMap<>(s.enchants);
             net.minecraft.world.item.enchantment.EnchantmentHelper.updateEnchantments(h, mut -> {
