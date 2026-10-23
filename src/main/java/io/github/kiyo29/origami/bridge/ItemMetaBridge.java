@@ -78,8 +78,8 @@ final class ItemMetaBridge {
     }
 
     private static ItemMeta proxy(State s) {
-        return (ItemMeta) Proxy.newProxyInstance(ItemMeta.class.getClassLoader(),
-                new Class<?>[] {ItemMeta.class, Damageable.class, Repairable.class}, new MetaHandler(s));
+        return (ItemMeta) Proxy.newProxyInstance(CombinedMeta.class.getClassLoader(),
+                new Class<?>[] {CombinedMeta.class}, new MetaHandler(s));
     }
 
     static boolean isMeta(Object o) {
