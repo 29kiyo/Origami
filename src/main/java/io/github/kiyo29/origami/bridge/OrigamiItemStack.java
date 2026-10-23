@@ -192,44 +192,85 @@ public final class OrigamiItemStack extends ItemStack {
 
     @Override
     public boolean containsEnchantment(Enchantment ench) {
-        return false;
+        return ench != null && getEnchantmentLevel(ench) > 0;
     }
 
     @Override
     public int getEnchantmentLevel(Enchantment ench) {
-        return 0;
+        if (ench == null) {
+            throw new IllegalArgumentException("Enchantment cannot be null");
+        }
+        ItemMeta m = getItemMeta();
+        return m == null ? 0 : m.getEnchantLevel(ench);
     }
 
     @Override
     public Map<Enchantment, Integer> getEnchantments() {
-        return new HashMap<>();
+        ItemMeta m = getItemMeta();
+        return m == null ? new HashMap<>() : new HashMap<>(m.getEnchants());
     }
 
     @Override
     public void addEnchantments(Map<Enchantment, Integer> enchantments) {
-        throw UnimplementedCalls.exception("ItemStack#addEnchantments(Map)");
+        if (enchantments == null) {
+            throw new IllegalArgumentException("Enchantments cannot be null");
+        }
+        for (Map.Entry<Enchantment, Integer> e : enchantments.entrySet()) {
+            addEnchantment(e.getKey(), e.getValue());
+        }
     }
 
     @Override
     public void addEnchantment(Enchantment ench, int level) {
-        throw UnimplementedCalls.exception("ItemStack#addEnchantment(Enchantment, int)");
+        if (ench == null) {
+            throw new IllegalArgumentException("Enchantment cannot be null");
+        }
+        if (level < ench.getStartLevel() || level > ench.getMaxLevel()) {
+            throw new IllegalArgumentException("Enchantment level is either too low or too high (given " + level
+                    + ", bounds are " + ench.getStartLevel() + " to " + ench.getMaxLevel() + ")");
+        }
+        if (!ench.canEnchantItem(this)) {
+            throw new IllegalArgumentException("Specified enchantment cannot be applied to this itemstack");
+        }
+        addUnsafeEnchantment(ench, level);
     }
 
     @Override
     public void addUnsafeEnchantments(Map<Enchantment, Integer> enchantments) {
-        throw UnimplementedCalls.exception("ItemStack#addUnsafeEnchantments(Map)");
+        for (Map.Entry<Enchantment, Integer> e : enchantments.entrySet()) {
+            addUnsafeEnchantment(e.getKey(), e.getValue());
+        }
     }
 
     @Override
     public void addUnsafeEnchantment(Enchantment ench, int level) {
-        throw UnimplementedCalls.exception("ItemStack#addUnsafeEnchantment(Enchantment, int)");
+        if (ench == null) {
+            throw new IllegalArgumentException("Enchantment cannot be null");
+        }
+        ItemMeta m = getItemMeta();
+        if (m == null) {
+            throw new IllegalStateException("Cannot enchant an empty stack");
+        }
+        m.addEnchant(ench, level, true);
+        setItemMeta(m);
     }
 
     @Override
     public int removeEnchantment(Enchantment ench) {
-        return 0;
+        ItemMeta m = getItemMeta();
+        if (m == null) {
+            return 0;
+        }
+        int old = m.getEnchantLevel(ench);
+        m.removeEnchant(ench);
+        setItemMeta(m);
+        return old;
     }
 
     @Override
-    public void removeEnchantments() { }
+    public void removeEnchantments() {
+        for (Enchantment e : new java.util.ArrayList<>(getEnchantments().keySet())) {
+            removeEnchantment(e);
+        }
+    }
 }

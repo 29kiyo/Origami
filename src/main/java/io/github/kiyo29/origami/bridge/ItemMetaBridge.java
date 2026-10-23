@@ -11,6 +11,7 @@ import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.util.Unit;
 import net.minecraft.world.item.component.CustomModelData;
 import net.minecraft.world.item.component.ItemLore;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -51,6 +52,7 @@ final class ItemMetaBridge {
         Integer customModelData;
         final EnumSet<ItemFlag> flags = EnumSet.noneOf(ItemFlag.class);
         int repairCost;
+        final Map<Enchantment, Integer> enchants = new LinkedHashMap<>();
 
         State copy() {
             State c = new State();
@@ -62,6 +64,7 @@ final class ItemMetaBridge {
             c.customModelData = customModelData;
             c.flags.addAll(flags);
             c.repairCost = repairCost;
+            c.enchants.putAll(enchants);
             return c;
         }
 
@@ -69,7 +72,7 @@ final class ItemMetaBridge {
             return Objects.equals(name, o.name) && Objects.equals(lore, o.lore) && damage == o.damage
                     && Objects.equals(maxDamage, o.maxDamage) && unbreakable == o.unbreakable
                     && Objects.equals(customModelData, o.customModelData) && flags.equals(o.flags)
-                    && repairCost == o.repairCost;
+                    && repairCost == o.repairCost && enchants.equals(o.enchants);
         }
     }
 
@@ -127,7 +130,7 @@ final class ItemMetaBridge {
         }
         State s = read(h);
         return s.name != null || (s.lore != null && !s.lore.isEmpty()) || s.damage > 0 || s.unbreakable
-                || s.customModelData != null;
+                || s.customModelData != null || !s.enchants.isEmpty();
     }
 
     static ItemMeta fromHandle(net.minecraft.world.item.ItemStack h) {
@@ -151,6 +154,15 @@ final class ItemMetaBridge {
         s.unbreakable = h.has(DataComponents.UNBREAKABLE);
         CustomModelData cmd = h.get(DataComponents.CUSTOM_MODEL_DATA);
         s.customModelData = cmd == null || cmd.floats().isEmpty() ? null : cmd.floats().get(0).intValue();
+        net.minecraft.world.item.enchantment.ItemEnchantments ench = h.get(DataComponents.ENCHANTMENTS);
+        if (ench != null) {
+            for (var holder : ench.keySet()) {
+                var id = holder.unwrapKey().map(k -> k.identifier()).orElse(null);
+                if (id != null) {
+                    s.enchants.put(EnchantmentBridge.of(id), ench.getLevel(holder));
+                }
+            }
+        }
         return s;
     }
 
@@ -190,6 +202,17 @@ final class ItemMetaBridge {
         } else {
             h.set(DataComponents.CUSTOM_MODEL_DATA,
                     new CustomModelData(List.of(Float.valueOf(s.customModelData)), List.of(), List.of(), List.of()));
+        }
+        if (s.enchants.isEmpty()) {
+            h.remove(DataComponents.ENCHANTMENTS);
+        } else {
+            Map<Enchantment, Integer> want = new LinkedHashMap<>(s.enchants);
+            net.minecraft.world.item.enchantment.EnchantmentHelper.updateEnchantments(h, mut -> {
+                mut.removeIf(x -> true);
+                for (var e : want.entrySet()) {
+                    mut.set(EnchantmentBridge.holderOf(e.getKey()), e.getValue());
+                }
+            });
         }
         return true;
     }
@@ -288,11 +311,35 @@ final class ItemMetaBridge {
                 case "hasRepairCost" -> { return s.repairCost > 0; }
                 case "getRepairCost" -> { return s.repairCost; }
                 case "setRepairCost" -> { s.repairCost = (Integer) a[0]; return null; }
-                case "hasEnchants", "hasEnchant", "hasConflictingEnchant", "removeEnchant",
-                        "hasAttributeModifiers" -> { return false; }
-                case "getEnchants" -> { return new HashMap<>(); }
-                case "getEnchantLevel" -> { return 0; }
-                case "removeEnchantments" -> { return null; }
+                case "hasEnchants" -> { return !s.enchants.isEmpty(); }
+                case "hasEnchant" -> { return a[0] != null && s.enchants.containsKey((Enchantment) a[0]); }
+                case "getEnchants" -> { return new LinkedHashMap<>(s.enchants); }
+                case "getEnchantLevel" -> { Integer l = s.enchants.get((Enchantment) a[0]); return l == null ? 0 : l; }
+                case "addEnchant" -> {
+                    Enchantment e = (Enchantment) a[0];
+                    int lvl = (Integer) a[1];
+                    boolean unsafe = (Boolean) a[2];
+                    if (e == null) {
+                        throw new IllegalArgumentException("Enchantment cannot be null");
+                    }
+                    if (!unsafe && (lvl < e.getStartLevel() || lvl > e.getMaxLevel())) {
+                        return false;
+                    }
+                    Integer old = s.enchants.put(e, lvl);
+                    return old == null || old != lvl;
+                }
+                case "removeEnchant" -> { return s.enchants.remove((Enchantment) a[0]) != null; }
+                case "removeEnchantments" -> { s.enchants.clear(); return null; }
+                case "hasConflictingEnchant" -> {
+                    Enchantment e = (Enchantment) a[0];
+                    for (Enchantment have : s.enchants.keySet()) {
+                        if (have.conflictsWith(e)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                case "hasAttributeModifiers" -> { return false; }
                 case "setVersion" -> { return null; }
                 case "clone" -> { return proxy(s.copy()); }
                 case "serialize" -> {

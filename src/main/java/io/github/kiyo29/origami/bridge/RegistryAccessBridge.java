@@ -36,6 +36,9 @@ public final class RegistryAccessBridge implements RegistryAccess {
         if (type == BlockType.class) {
             return cast(TypeRegistries.registry(TypeRegistries.Kind.BLOCK));
         }
+        if (type == org.bukkit.enchantments.Enchantment.class) {
+            return cast(EnchantmentBridge.registry());
+        }
         return cast(CACHE.computeIfAbsent(type, k -> create(type.getSimpleName())));
     }
 
@@ -47,6 +50,9 @@ public final class RegistryAccessBridge implements RegistryAccess {
         }
         if (id.equals("minecraft:block")) {
             return cast(TypeRegistries.registry(TypeRegistries.Kind.BLOCK));
+        }
+        if (id.equals("minecraft:enchantment")) {
+            return cast(EnchantmentBridge.registry());
         }
         return cast(CACHE.computeIfAbsent(key, k -> create(id)));
     }
