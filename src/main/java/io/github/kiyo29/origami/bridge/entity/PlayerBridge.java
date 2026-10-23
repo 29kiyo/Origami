@@ -178,6 +178,10 @@ public final class PlayerBridge extends SenderBase {
                 default -> UNHANDLED;
             };
         }
+        Object inventoryResult = io.github.kiyo29.origami.bridge.entity.PlayerInventoryBridge.handle(ref.get(), method, args);
+        if (inventoryResult != io.github.kiyo29.origami.bridge.entity.PlayerInventoryBridge.NONE) {
+            return inventoryResult;
+        }
         Class<?>[] types = method.getParameterTypes();
         int n = types.length;
         if (methodName.equals("teleport") && n >= 1) {

@@ -177,17 +177,17 @@ public final class OrigamiItemStack extends ItemStack {
 
     @Override
     public boolean hasItemMeta() {
-        return false;
+        return ItemMetaBridge.has(handle);
     }
 
     @Override
     public ItemMeta getItemMeta() {
-        throw UnimplementedCalls.exception("ItemStack#getItemMeta()");
+        return handle.isEmpty() ? null : ItemMetaBridge.fromHandle(handle);
     }
 
     @Override
     public boolean setItemMeta(ItemMeta itemMeta) {
-        throw UnimplementedCalls.exception("ItemStack#setItemMeta(ItemMeta)");
+        return ItemMetaBridge.apply(handle, itemMeta);
     }
 
     @Override
