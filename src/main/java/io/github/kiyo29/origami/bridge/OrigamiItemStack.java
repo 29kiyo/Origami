@@ -138,10 +138,25 @@ public final class OrigamiItemStack extends ItemStack {
         if (stack == this) {
             return true;
         }
-        if (stack instanceof OrigamiItemStack other) {
-            return net.minecraft.world.item.ItemStack.isSameItemSameComponents(handle, other.handle);
+        return net.minecraft.world.item.ItemStack.isSameItemSameComponents(handle, handleOf(stack));
+    }
+
+    /**
+     * Minecraft handle of any Bukkit stack. A plain ItemStack (craftDelegate wrapper) is rebuilt
+     * from its type and ItemMeta, so comparisons never fall back to type-only.
+     */
+    private static net.minecraft.world.item.ItemStack handleOf(ItemStack s) {
+        if (s instanceof OrigamiItemStack o) {
+            return o.handle;
         }
-        return getType() == stack.getType();
+        if (s.getType() == Material.AIR) {
+            return net.minecraft.world.item.ItemStack.EMPTY;
+        }
+        OrigamiItemStack t = create(s.getType(), Math.max(1, s.getAmount()));
+        if (s.hasItemMeta()) {
+            ItemMetaBridge.apply(t.handle, s.getItemMeta());
+        }
+        return t.handle;
     }
 
     @Override
