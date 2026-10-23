@@ -2,6 +2,7 @@ package io.github.kiyo29.origami.bridge;
 
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
 import io.papermc.paper.plugin.lifecycle.event.handler.configuration.LifecycleEventHandlerConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -20,6 +21,12 @@ public final class OrigamiInternalApiBridge extends InternalApiBridgeStubs {
     public LifecycleEventManager<Plugin> createPluginLifecycleEventManager(
             JavaPlugin plugin, BooleanSupplier registrationCheck) {
         return new IgnoringLifecycleEventManager();
+    }
+
+    /** Phase 8: ItemStack.empty() and new ItemStack(AIR) end up here. */
+    @Override
+    public ItemStack createEmptyStack() {
+        return OrigamiItemStack.empty();
     }
 
     /**

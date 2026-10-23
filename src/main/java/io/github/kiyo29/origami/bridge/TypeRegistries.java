@@ -184,7 +184,7 @@ final class TypeRegistries {
                     }
                     yield b;
                 }
-                case "createItemStack" -> new ItemStack(material, a.length == 0 ? 1 : (Integer) a[0]);
+                case "createItemStack" -> OrigamiItemStack.create(material, a.length == 0 ? 1 : (Integer) a[0]);
                 default -> UNHANDLED;
             };
         }
