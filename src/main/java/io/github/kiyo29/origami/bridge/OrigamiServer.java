@@ -161,6 +161,8 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getMessenger" -> ServerExtras.messenger();
                 case "getScheduler" -> io.github.kiyo29.origami.bridge.scheduler.OrigamiScheduler.get();
                 case "getItemFactory" -> ItemFactoryBridge.get();
+                case "getTag" -> TagBridge.get((String) args[0], (org.bukkit.NamespacedKey) args[1], (Class<?>) args[2]);
+                case "getTags" -> TagBridge.getAll((String) args[0], (Class<?>) args[1]);
                 case "getPort" -> s == null ? -1 : s.getPort();
                 case "getMaxPlayers" -> list == null ? 0 : list.getMaxPlayers();
                 case "isPrimaryThread" -> s != null && s.isSameThread();
