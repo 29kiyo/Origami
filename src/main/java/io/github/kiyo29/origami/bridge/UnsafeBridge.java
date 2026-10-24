@@ -53,7 +53,7 @@ final class UnsafeBridge implements InvocationHandler {
             case "getProtocolVersion" -> McCompat.get().protocolVersion();
             case "getMainLevelName" -> "world";
             case "get" -> lookup(args);
-            case "toLegacy", "fromLegacy" -> args.length == 1 && args[0] instanceof Material ? args[0] : UNHANDLED;
+            case "toLegacy", "fromLegacy" -> legacy(args);
             case "getMaterial" -> args.length == 2 && args[0] instanceof String s ? Material.getMaterial(s) : UNHANDLED;
             default -> UNHANDLED;
         };
@@ -69,6 +69,17 @@ final class UnsafeBridge implements InvocationHandler {
                 && args[1] instanceof org.bukkit.NamespacedKey nk) {
             org.bukkit.Registry reg = io.papermc.paper.registry.RegistryAccess.registryAccess().getRegistry(key);
             return reg.get(nk);
+        }
+        return UNHANDLED;
+    }
+
+    /** Legacy materials are unsupported: conversions are the identity. */
+    private static Object legacy(Object[] args) {
+        if (args.length >= 1 && args[0] instanceof Material m) {
+            return m;
+        }
+        if (args.length >= 1 && args[0] instanceof org.bukkit.material.MaterialData d) {
+            return d.getItemType();
         }
         return UNHANDLED;
     }
