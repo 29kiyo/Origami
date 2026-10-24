@@ -164,6 +164,7 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getPort" -> s == null ? -1 : s.getPort();
                 case "getMaxPlayers" -> list == null ? 0 : list.getMaxPlayers();
                 case "isPrimaryThread" -> s != null && s.isSameThread();
+                case "isStopping" -> s != null && !s.isRunning();
                 default -> UNHANDLED;
             };
         }
