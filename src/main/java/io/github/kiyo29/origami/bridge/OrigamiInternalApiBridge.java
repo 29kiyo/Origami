@@ -39,4 +39,9 @@ public final class OrigamiInternalApiBridge extends InternalApiBridgeStubs {
             UnimplementedCalls.note("LifecycleEventManager#registerEventHandler(LifecycleEventHandlerConfiguration)");
         }
     }
+
+    @Override
+    public org.bukkit.damage.DamageSource.Builder createDamageSourceBuilder(org.bukkit.damage.DamageType type) {
+        return DamageSourceBridge.builder(type);
+    }
 }
