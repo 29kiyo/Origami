@@ -5,6 +5,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import org.bukkit.Material;
+import org.bukkit.configuration.serialization.DelegateDeserialization;
+import io.github.kiyo29.origami.compat.McCompat;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -21,6 +23,7 @@ import java.util.Map;
  * ItemMeta and enchantments are NOT implemented yet (hasItemMeta = false, getItemMeta throws).
  * setType replaces the handle, so an inventory-mirrored stack stops mirroring after setType (partial).
  */
+@DelegateDeserialization(ItemStack.class)
 public final class OrigamiItemStack extends ItemStack {
     private net.minecraft.world.item.ItemStack handle;
 
@@ -287,5 +290,34 @@ public final class OrigamiItemStack extends ItemStack {
         for (Enchantment e : new java.util.ArrayList<>(getEnchantments().keySet())) {
             removeEnchantment(e);
         }
+    }
+
+    // ---- serialization (Spigot format: v / type / amount / meta) ----
+
+    @Override
+    public Map<String, Object> serialize() {
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("v", McCompat.get().dataVersion());
+        result.put("type", getType().name());
+        if (getAmount() != 1) {
+            result.put("amount", getAmount());
+        }
+        if (hasItemMeta()) {
+            ItemMeta meta = getItemMeta();
+            if (meta != null) {
+                result.put("meta", new SerializableMeta(meta.serialize()));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public byte[] serializeAsBytes() {
+        throw UnimplementedCalls.exception("ItemStack#serializeAsBytes()");
+    }
+
+    @Override
+    public String translationKey() {
+        return getTranslationKey();
     }
 }

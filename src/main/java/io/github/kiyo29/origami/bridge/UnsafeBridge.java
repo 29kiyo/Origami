@@ -52,9 +52,24 @@ final class UnsafeBridge implements InvocationHandler {
             case "getDataVersion" -> McCompat.get().dataVersion();
             case "getProtocolVersion" -> McCompat.get().protocolVersion();
             case "getMainLevelName" -> "world";
+            case "get" -> lookup(args);
             case "toLegacy", "fromLegacy" -> args.length == 1 && args[0] instanceof Material ? args[0] : UNHANDLED;
             case "getMaterial" -> args.length == 2 && args[0] instanceof String s ? Material.getMaterial(s) : UNHANDLED;
             default -> UNHANDLED;
         };
+    }
+
+    /** get(Class, String) = legacy-name translation (identity); get(RegistryKey, NamespacedKey) = registry lookup. */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object lookup(Object[] args) {
+        if (args != null && args.length == 2 && args[0] instanceof Class && args[1] instanceof String name) {
+            return name;
+        }
+        if (args != null && args.length == 2 && args[0] instanceof io.papermc.paper.registry.RegistryKey key
+                && args[1] instanceof org.bukkit.NamespacedKey nk) {
+            org.bukkit.Registry reg = io.papermc.paper.registry.RegistryAccess.registryAccess().getRegistry(key);
+            return reg.get(nk);
+        }
+        return UNHANDLED;
     }
 }

@@ -217,6 +217,50 @@ final class ItemMetaBridge {
         return true;
     }
 
+    /** Rebuilds an ItemMeta from the map written by the "serialize" case below (Spigot-style keys). */
+    static ItemMeta fromMap(Map<String, Object> m) {
+        State s = new State();
+        if (m.get("display-name") instanceof String dn) {
+            s.name = LEGACY.deserialize(dn);
+        }
+        if (m.get("lore") instanceof List<?> lo && !lo.isEmpty()) {
+            s.lore = new ArrayList<>();
+            for (Object o : lo) {
+                s.lore.add(LEGACY.deserialize(String.valueOf(o)));
+            }
+        }
+        if (m.get("Unbreakable") instanceof Boolean ub) {
+            s.unbreakable = ub;
+        }
+        if (m.get("Damage") instanceof Number dm) {
+            s.damage = dm.intValue();
+        }
+        if (m.get("custom-model-data") instanceof Number cm) {
+            s.customModelData = cm.intValue();
+        }
+        if (m.get("ItemFlags") instanceof List<?> fl) {
+            for (Object o : fl) {
+                try {
+                    s.flags.add(ItemFlag.valueOf(String.valueOf(o)));
+                } catch (IllegalArgumentException ignored) {
+                    // unknown flag name: skip
+                }
+            }
+        }
+        if (m.get("enchants") instanceof Map<?, ?> en) {
+            for (Map.Entry<?, ?> e : en.entrySet()) {
+                String key = String.valueOf(e.getKey()).toLowerCase(java.util.Locale.ROOT);
+                net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.tryParse(
+                        key.indexOf(':') < 0 ? "minecraft:" + key : key);
+                Enchantment ench = id == null ? null : EnchantmentBridge.lookup(id);
+                if (ench != null && e.getValue() instanceof Number lv) {
+                    s.enchants.put(ench, lv.intValue());
+                }
+            }
+        }
+        return proxy(s);
+    }
+
     // ---- the Proxy handler ----
 
     private static final class MetaHandler implements InvocationHandler {
@@ -363,6 +407,20 @@ final class ItemMetaBridge {
                     }
                     if (s.customModelData != null) {
                         m.put("custom-model-data", s.customModelData);
+                    }
+                                        if (!s.flags.isEmpty()) {
+                        List<String> fl = new ArrayList<>();
+                        for (ItemFlag f : s.flags) {
+                            fl.add(f.name());
+                        }
+                        m.put("ItemFlags", fl);
+                    }
+                    if (!s.enchants.isEmpty()) {
+                        Map<String, Object> en = new LinkedHashMap<>();
+                        for (Map.Entry<Enchantment, Integer> e : s.enchants.entrySet()) {
+                            en.put(e.getKey().getKey().toString(), e.getValue());
+                        }
+                        m.put("enchants", en);
                     }
                     return m;
                 }

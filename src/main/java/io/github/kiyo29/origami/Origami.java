@@ -29,6 +29,7 @@ public final class Origami implements ModInitializer {
         config = OrigamiConfig.load(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json"), LOGGER);
         Lang.init(config.language);
         EventBridge.register();
+        io.github.kiyo29.origami.bridge.SerializationBridge.register();
         ServerTickEvents.START_SERVER_TICK.register(server -> OrigamiScheduler.get().heartbeat());
 
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
