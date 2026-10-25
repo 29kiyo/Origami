@@ -41,6 +41,9 @@ public final class PlayerBridge extends SenderBase {
     private volatile boolean sleepingIgnored;
     private volatile Location compassTarget;
     private volatile boolean firstJoin;
+    private final Set<UUID> hiddenPlayers = ConcurrentHashMap.newKeySet();
+    private final Map<String, Map<org.bukkit.plugin.Plugin, org.bukkit.metadata.MetadataValue>> metadata = new ConcurrentHashMap<>();
+    private volatile org.bukkit.event.entity.EntityDamageEvent lastDamageCause;
     private final Player proxy;
 
     private PlayerBridge(ServerPlayer player) {
@@ -190,6 +193,37 @@ public final class PlayerBridge extends SenderBase {
         }
         Class<?>[] types = method.getParameterTypes();
         int n = types.length;
+        if ((methodName.equals("hidePlayer") || methodName.equals("showPlayer")) && n >= 1 && args[n - 1] instanceof Player target) {
+            if (methodName.equals("hidePlayer")) {
+                hiddenPlayers.add(target.getUniqueId());
+            } else {
+                hiddenPlayers.remove(target.getUniqueId());
+            }
+            return null;
+        }
+        if (methodName.equals("canSee") && n == 1 && args[0] instanceof Player viewed) {
+            return !hiddenPlayers.contains(viewed.getUniqueId());
+        }
+        if (methodName.equals("setMetadata") && n == 2) {
+            org.bukkit.metadata.MetadataValue value = (org.bukkit.metadata.MetadataValue) args[1];
+            metadata.computeIfAbsent((String) args[0], k -> new ConcurrentHashMap<>()).put(value.getOwningPlugin(), value);
+            return null;
+        }
+        if (methodName.equals("getMetadata") && n == 1) {
+            var values = metadata.get((String) args[0]);
+            return values == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(values.values());
+        }
+        if (methodName.equals("hasMetadata") && n == 1) {
+            var values = metadata.get((String) args[0]);
+            return values != null && !values.isEmpty();
+        }
+        if (methodName.equals("removeMetadata") && n == 2) {
+            var values = metadata.get((String) args[0]);
+            if (values != null) {
+                values.remove((org.bukkit.plugin.Plugin) args[1]);
+            }
+            return null;
+        }
         if (methodName.equals("teleportAsync") && n >= 1 && args[0] instanceof Location target) {
             java.util.concurrent.CompletableFuture<Boolean> future = new java.util.concurrent.CompletableFuture<>();
             onServerThread(() -> {
@@ -282,6 +316,8 @@ public final class PlayerBridge extends SenderBase {
                     return System.currentTimeMillis();
                 case "hasPlayedBefore":
                     return !firstJoin;
+                case "getLastDamageCause":
+                    return lastDamageCause;
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -412,6 +448,9 @@ public final class PlayerBridge extends SenderBase {
                 }
                 case "canSee":
                     return true;
+                case "setLastDamageCause":
+                    lastDamageCause = (org.bukkit.event.entity.EntityDamageEvent) args[0];
+                    return null;
                 case "setDisplayName":
                     displayName = (String) args[0];
                     return null;

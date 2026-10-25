@@ -176,6 +176,7 @@ final class TypeRegistries {
                 case "getTranslationKey", "translationKey" -> translationKey();
                 case "isEnabledByFeature" -> true;
                 case "getMaxStackSize" -> BuiltInRegistries.ITEM.getValue(idOf(path)).getDefaultMaxStackSize();
+                case "getMaxDurability" -> (short) BuiltInRegistries.ITEM.getValue(idOf(path)).getDefaultInstance().getMaxDamage();
                 case "hasBlockType" -> has(Kind.BLOCK, path);
                 case "getBlockType" -> {
                     Object b = type(Kind.BLOCK, path);

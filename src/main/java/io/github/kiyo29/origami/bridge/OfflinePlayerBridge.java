@@ -90,6 +90,10 @@ final class OfflinePlayerBridge {
                     default -> { }
                 }
             }
+            if (method.getName().equals("getStatistic") && method.getParameterCount() == 1) {
+                ServerPlayer onlinePlayer = online(uuid);
+                return onlinePlayer == null ? 0 : PlayerBridge.of(onlinePlayer).getStatistic((org.bukkit.Statistic) args[0]);
+            }
             if (method.isDefault()) {
                 return InvocationHandler.invokeDefault(proxy, method, args);
             }
