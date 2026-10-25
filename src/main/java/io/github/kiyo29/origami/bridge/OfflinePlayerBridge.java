@@ -69,8 +69,17 @@ final class OfflinePlayerBridge {
                     case "getName" -> {
                         return p != null ? p.getName().getString() : knownName;
                     }
-                    case "isOnline", "hasPlayedBefore" -> {
+                    case "isOnline" -> {
                         return p != null;
+                    }
+                    case "hasPlayedBefore" -> {
+                        return PlayerHistory.first(uuid) != 0L;
+                    }
+                    case "getFirstPlayed" -> {
+                        return PlayerHistory.first(uuid);
+                    }
+                    case "getLastPlayed" -> {
+                        return p != null ? System.currentTimeMillis() : PlayerHistory.last(uuid);
                     }
                     case "getPlayer" -> {
                         return p == null ? null : PlayerBridge.of(p);

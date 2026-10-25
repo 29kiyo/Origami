@@ -40,18 +40,21 @@ public final class PlayerBridge extends SenderBase {
     private volatile String displayName;
     private volatile boolean sleepingIgnored;
     private volatile Location compassTarget;
+    private volatile boolean firstJoin;
     private final Player proxy;
 
     private PlayerBridge(ServerPlayer player) {
         this.uuid = player.getUUID();
         this.ref = new WeakReference<>(player);
         this.name = player.getName().getString();
+        this.firstJoin = io.github.kiyo29.origami.bridge.PlayerHistory.joined(uuid);
         this.proxy = (Player) Proxy.newProxyInstance(
                 Player.class.getClassLoader(), new Class<?>[] {Player.class}, this);
     }
 
     /** 退出時にキャッシュから外す。別の ServerPlayer に差し替わっていたら外さない。 */
     public static void release(ServerPlayer player) {
+        io.github.kiyo29.origami.bridge.PlayerHistory.left(player.getUUID());
         CACHE.computeIfPresent(player.getUUID(), (id, b) -> {
             ServerPlayer current = b.ref.get();
             return current == null || current == player ? null : b;
@@ -273,6 +276,12 @@ public final class PlayerBridge extends SenderBase {
                     ServerPlayer p = need();
                     return mc != null && mc.getPlayerList().getBans().isBanned(p.nameAndId());
                 }
+                case "getFirstPlayed":
+                    return io.github.kiyo29.origami.bridge.PlayerHistory.first(uuid);
+                case "getLastPlayed":
+                    return System.currentTimeMillis();
+                case "hasPlayedBefore":
+                    return !firstJoin;
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -401,6 +410,8 @@ public final class PlayerBridge extends SenderBase {
                     onServerThread(() -> p.connection.disconnect(Component.literal(reason == null ? "" : reason)));
                     return null;
                 }
+                case "canSee":
+                    return true;
                 case "setDisplayName":
                     displayName = (String) args[0];
                     return null;
