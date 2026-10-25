@@ -15,6 +15,11 @@ final class McCompat262 implements McCompat {
     }
 
     @Override
+    public void setDayTime(ServerLevel level, long ticks) {
+        level.dimensionType().defaultClock().ifPresent(clock -> level.clockManager().setTotalTicks(clock, ticks));
+    }
+
+    @Override
     public boolean isFlying(ServerPlayer player) {
         return player.getAbilities().flying;
     }

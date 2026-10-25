@@ -39,6 +39,7 @@ public final class PlayerBridge extends SenderBase {
     private volatile String name;
     private volatile String displayName;
     private volatile boolean sleepingIgnored;
+    private volatile Location compassTarget;
     private final Player proxy;
 
     private PlayerBridge(ServerPlayer player) {
@@ -258,6 +259,8 @@ public final class PlayerBridge extends SenderBase {
                     return true;
                 case "isSleepingIgnored":
                     return sleepingIgnored;
+                case "getCompassTarget":
+                    return compassTarget != null ? compassTarget : LevelBridge.of(need().level()).getSpawnLocation();
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -370,6 +373,15 @@ public final class PlayerBridge extends SenderBase {
                     int level = (Integer) args[0];
                     onServerThread(() -> p.setExperienceLevels(level));
                     return null;
+                }
+                case "setCompassTarget":
+                    compassTarget = (Location) args[0];
+                    return null;
+                case "getStatistic": {
+                    if (args[0] == org.bukkit.Statistic.PLAY_ONE_MINUTE) {
+                        return need().getStats().getValue(net.minecraft.stats.Stats.CUSTOM.get(net.minecraft.stats.Stats.PLAY_TIME));
+                    }
+                    return UNHANDLED;
                 }
                 case "setDisplayName":
                     displayName = (String) args[0];

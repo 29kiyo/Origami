@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 public interface McCompat {
     /** そのワールドの既定クロックの時刻 (tick)。クロックが無いワールドは 0。 */
     long dayTime(ServerLevel level);
+    void setDayTime(ServerLevel level, long ticks);
 
     boolean isFlying(ServerPlayer player);
 

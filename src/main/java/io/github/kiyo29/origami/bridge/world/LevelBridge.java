@@ -241,6 +241,19 @@ public final class LevelBridge implements InvocationHandler {
             level().getWeatherData().setClearWeatherTime((Integer) args[0]);
             return null;
         }
+        if (n == 1 && methodName.equals("setFullTime") && args[0] instanceof Long full) {
+            McCompat.get().setDayTime(level(), full);
+            return null;
+        }
+        if (n == 1 && methodName.equals("setTime") && args[0] instanceof Long time) {
+            long current = McCompat.get().dayTime(level());
+            long margin = (time - current) % 24000L;
+            if (margin < 0) {
+                margin += 24000L;
+            }
+            McCompat.get().setDayTime(level(), current + margin);
+            return null;
+        }
         if (n == 3 && methodName.equals("getBlockAt") && args[0] instanceof Integer) {
             return BlockBridge.of(proxy, (Integer) args[0], (Integer) args[1], (Integer) args[2]);
         }
