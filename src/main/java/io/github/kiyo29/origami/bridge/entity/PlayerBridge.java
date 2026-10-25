@@ -201,6 +201,13 @@ public final class PlayerBridge extends SenderBase {
                     ServerPlayer p = ref.get();
                     return p == null ? name : p.getDisplayName().getString();
                 }
+                case "getAddress": {
+                    ServerPlayer p = ref.get();
+                    return p != null && p.connection != null
+                            && p.connection.getRemoteAddress() instanceof java.net.InetSocketAddress a ? a : null;
+                }
+                case "getHAProxyAddress":
+                    return null;
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
