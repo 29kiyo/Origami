@@ -187,6 +187,10 @@ public final class PlayerBridge extends SenderBase {
                 default -> UNHANDLED;
             };
         }
+        Object effectResult = io.github.kiyo29.origami.bridge.EffectBridge.handle(ref.get(), method, args);
+        if (effectResult != io.github.kiyo29.origami.bridge.EffectBridge.NONE) {
+            return effectResult;
+        }
         Object inventoryResult = io.github.kiyo29.origami.bridge.entity.PlayerInventoryBridge.handle(ref.get(), method, args);
         if (inventoryResult != io.github.kiyo29.origami.bridge.entity.PlayerInventoryBridge.NONE) {
             return inventoryResult;

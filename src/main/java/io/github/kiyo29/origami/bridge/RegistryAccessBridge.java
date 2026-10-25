@@ -51,6 +51,9 @@ public final class RegistryAccessBridge implements RegistryAccess {
         if (type == BlockType.class) {
             return cast(TypeRegistries.registry(TypeRegistries.Kind.BLOCK));
         }
+        if (type == org.bukkit.potion.PotionEffectType.class) {
+            return cast(EffectBridge.registry());
+        }
         if (type == org.bukkit.enchantments.Enchantment.class) {
             return cast(EnchantmentBridge.registry());
         }
@@ -65,6 +68,9 @@ public final class RegistryAccessBridge implements RegistryAccess {
         }
         if (id.equals("minecraft:block")) {
             return cast(TypeRegistries.registry(TypeRegistries.Kind.BLOCK));
+        }
+        if (id.equals("minecraft:mob_effect")) {
+            return cast(EffectBridge.registry());
         }
         if (id.equals("minecraft:enchantment")) {
             return cast(EnchantmentBridge.registry());
