@@ -37,6 +37,7 @@ public final class PlayerBridge extends SenderBase {
     private final UUID uuid;
     private volatile WeakReference<ServerPlayer> ref;
     private volatile String name;
+    private volatile String displayName;
     private final Player proxy;
 
     private PlayerBridge(ServerPlayer player) {
@@ -199,7 +200,7 @@ public final class PlayerBridge extends SenderBase {
                     return uuid;
                 case "getDisplayName": {
                     ServerPlayer p = ref.get();
-                    return p == null ? name : p.getDisplayName().getString();
+                    return displayName != null ? displayName : p == null ? name : p.getDisplayName().getString();
                 }
                 case "getAddress": {
                     ServerPlayer p = ref.get();
@@ -262,6 +263,9 @@ public final class PlayerBridge extends SenderBase {
                     }
                     return loc;
                 }
+                case "setDisplayName":
+                    displayName = (String) args[0];
+                    return null;
                 case "setHealth": {
                     double health = (Double) args[0];
                     ServerPlayer p = need();

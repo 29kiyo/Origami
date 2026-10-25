@@ -165,6 +165,7 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getMaxPlayers" -> list == null ? 0 : list.getMaxPlayers();
                 case "isPrimaryThread" -> s != null && s.isSameThread();
                 case "isStopping" -> s != null && !s.isRunning();
+                case "getOnlineMode" -> s != null && s.usesAuthentication();
                 default -> UNHANDLED;
             };
         }
@@ -178,6 +179,7 @@ public final class OrigamiServer implements InvocationHandler {
             // Bukkit の getPlayer(String) は部分一致だが、現状は完全一致のみ (Phase 6 で見直す)
             case "getPlayer" -> first instanceof UUID id ? playerById(list, id) : playerByName(list, (String) first);
             case "getPlayerExact" -> playerByName(list, (String) first);
+            case "getOfflinePlayer" -> OfflinePlayerBridge.get(first);
             case "getTag" -> TagBridge.get((String) first, (org.bukkit.NamespacedKey) args[1], (Class<?>) args[2]);
             case "getTags" -> TagBridge.getAll((String) first, (Class<?>) args[1]);
             case "getWorld" -> first instanceof String worldName ? LevelBridge.byName(worldName)
