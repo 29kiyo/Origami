@@ -180,6 +180,11 @@ public final class OrigamiServer implements InvocationHandler {
             case "getPlayer" -> first instanceof UUID id ? playerById(list, id) : playerByName(list, (String) first);
             case "getPlayerExact" -> playerByName(list, (String) first);
             case "getOfflinePlayer" -> OfflinePlayerBridge.get(first);
+            // BanList.Type 版と BanListType 版の両方 (BanListBridge)。Type.NAME / PROFILE は Profile 版、IP は IP 版
+            case "getBanList" -> first instanceof org.bukkit.BanList.Type banType ? BanListBridge.of(banType)
+                    : first instanceof io.papermc.paper.ban.BanListType<?> banListType
+                    ? (banListType.typeClass().equals(org.bukkit.ban.IpBanList.class) ? BanListBridge.ip() : BanListBridge.profile())
+                    : UNHANDLED;
             case "getTag" -> TagBridge.get((String) first, (org.bukkit.NamespacedKey) args[1], (Class<?>) args[2]);
             case "getTags" -> TagBridge.getAll((String) first, (Class<?>) args[1]);
             case "getWorld" -> first instanceof String worldName ? LevelBridge.byName(worldName)
