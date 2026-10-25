@@ -38,6 +38,7 @@ public final class PlayerBridge extends SenderBase {
     private volatile WeakReference<ServerPlayer> ref;
     private volatile String name;
     private volatile String displayName;
+    private volatile boolean sleepingIgnored;
     private final Player proxy;
 
     private PlayerBridge(ServerPlayer player) {
@@ -243,6 +244,20 @@ public final class PlayerBridge extends SenderBase {
                     return need().getAirSupply();
                 case "getActivePotionEffects":
                     return java.util.List.of();
+                case "getFallDistance":
+                    return (float) need().fallDistance;
+                case "getLevel":
+                    return need().experienceLevel;
+                case "getExp":
+                    return need().experienceProgress;
+                case "getTotalExperience":
+                    return need().totalExperience;
+                case "getPlayerTimeOffset":
+                    return 0L;
+                case "isPlayerTimeRelative":
+                    return true;
+                case "isSleepingIgnored":
+                    return sleepingIgnored;
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -339,6 +354,21 @@ public final class PlayerBridge extends SenderBase {
                     ServerPlayer p = need();
                     int air = (Integer) args[0];
                     onServerThread(() -> p.setAirSupply(air));
+                    return null;
+                }
+                case "setFallDistance": {
+                    ServerPlayer p = need();
+                    float distance = (Float) args[0];
+                    onServerThread(() -> p.fallDistance = distance);
+                    return null;
+                }
+                case "setSleepingIgnored":
+                    sleepingIgnored = (Boolean) args[0];
+                    return null;
+                case "setLevel": {
+                    ServerPlayer p = need();
+                    int level = (Integer) args[0];
+                    onServerThread(() -> p.setExperienceLevels(level));
                     return null;
                 }
                 case "setDisplayName":
