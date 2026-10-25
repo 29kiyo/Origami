@@ -222,6 +222,14 @@ public final class PlayerBridge extends SenderBase {
                     return FoodAccess.get(need().getFoodData());
                 case "getPotentialRespawnLocation":
                     return null;
+                case "getFlySpeed":
+                    return need().getAbilities().getFlyingSpeed() * 2.0F;
+                case "getWalkSpeed":
+                    return need().getAbilities().getWalkingSpeed() * 2.0F;
+                case "getMaximumAir":
+                    return need().getMaxAirSupply();
+                case "getRemainingAir":
+                    return need().getAirSupply();
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -288,6 +296,36 @@ public final class PlayerBridge extends SenderBase {
                     ServerPlayer p = need();
                     float value = (Float) args[0];
                     onServerThread(() -> FoodAccess.set(p.getFoodData(), value));
+                    return null;
+                }
+                case "setFlySpeed": {
+                    float speed = (Float) args[0];
+                    if (speed < -1.0F || speed > 1.0F) {
+                        throw new IllegalArgumentException("speed must be between -1 and 1: " + speed);
+                    }
+                    ServerPlayer p = need();
+                    onServerThread(() -> {
+                        p.getAbilities().setFlyingSpeed(speed / 2.0F);
+                        p.onUpdateAbilities();
+                    });
+                    return null;
+                }
+                case "setWalkSpeed": {
+                    float speed = (Float) args[0];
+                    if (speed < -1.0F || speed > 1.0F) {
+                        throw new IllegalArgumentException("speed must be between -1 and 1: " + speed);
+                    }
+                    ServerPlayer p = need();
+                    onServerThread(() -> {
+                        p.getAbilities().setWalkingSpeed(speed / 2.0F);
+                        p.onUpdateAbilities();
+                    });
+                    return null;
+                }
+                case "setRemainingAir": {
+                    ServerPlayer p = need();
+                    int air = (Integer) args[0];
+                    onServerThread(() -> p.setAirSupply(air));
                     return null;
                 }
                 case "setDisplayName":

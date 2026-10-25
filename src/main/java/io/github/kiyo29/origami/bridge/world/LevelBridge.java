@@ -171,6 +171,7 @@ public final class LevelBridge implements InvocationHandler {
                 case "getMaxHeight" -> level().getMinY() + level().getHeight();
                 case "getSeed" -> level().getSeed();
                 case "getPlayers" -> players();
+                case "getWorldBorder" -> WorldBorderBridge.of(this::level);
                 case "getSpawnLocation" -> spawn();
                 default -> UNHANDLED;
             };
