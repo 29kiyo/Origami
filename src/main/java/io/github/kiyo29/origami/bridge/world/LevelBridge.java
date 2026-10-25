@@ -173,6 +173,12 @@ public final class LevelBridge implements InvocationHandler {
                 case "getPlayers" -> players();
                 case "getWorldBorder" -> WorldBorderBridge.of(this::level);
                 case "getLogicalHeight" -> level().dimensionType().logicalHeight();
+                case "hasStorm" -> level().getWeatherData().isRaining();
+                case "isThundering" -> level().getWeatherData().isThundering();
+                case "isClearWeather" -> !level().getWeatherData().isRaining();
+                case "getWeatherDuration" -> level().getWeatherData().getRainTime();
+                case "getThunderDuration" -> level().getWeatherData().getThunderTime();
+                case "getClearWeatherDuration" -> level().getWeatherData().getClearWeatherTime();
                 case "getSpawnLocation" -> spawn();
                 default -> UNHANDLED;
             };
@@ -209,6 +215,31 @@ public final class LevelBridge implements InvocationHandler {
         if (methodName.equals("getHighestBlockYAt") && n == 2 && args[0] instanceof Integer hx && args[1] instanceof Integer hz) {
             // Bukkit default height map is MOTION_BLOCKING; ChunkAccess#getHeight returns the highest block's y
             return level().getChunk(hx >> 4, hz >> 4).getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, hx, hz);
+        }
+        if (n == 1 && (methodName.equals("setStorm") || methodName.equals("setThundering"))) {
+            var weather = level().getWeatherData();
+            boolean on = (Boolean) args[0];
+            if (methodName.equals("setStorm")) {
+                weather.setRaining(on);
+                weather.setRainTime(0);
+                weather.setClearWeatherTime(0);
+            } else {
+                weather.setThundering(on);
+                weather.setThunderTime(0);
+            }
+            return null;
+        }
+        if (n == 1 && methodName.equals("setWeatherDuration")) {
+            level().getWeatherData().setRainTime((Integer) args[0]);
+            return null;
+        }
+        if (n == 1 && methodName.equals("setThunderDuration")) {
+            level().getWeatherData().setThunderTime((Integer) args[0]);
+            return null;
+        }
+        if (n == 1 && methodName.equals("setClearWeatherDuration")) {
+            level().getWeatherData().setClearWeatherTime((Integer) args[0]);
+            return null;
         }
         if (n == 3 && methodName.equals("getBlockAt") && args[0] instanceof Integer) {
             return BlockBridge.of(proxy, (Integer) args[0], (Integer) args[1], (Integer) args[2]);
