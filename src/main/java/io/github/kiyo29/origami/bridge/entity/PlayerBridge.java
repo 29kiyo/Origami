@@ -209,6 +209,19 @@ public final class PlayerBridge extends SenderBase {
                 }
                 case "getHAProxyAddress":
                     return null;
+                case "updateInventory": {
+                    ServerPlayer p = need();
+                    onServerThread(() -> p.containerMenu.sendAllDataToRemote());
+                    return null;
+                }
+                case "isEmpty":
+                    return need().getPassengers().isEmpty();
+                case "getFireTicks":
+                    return need().getRemainingFireTicks();
+                case "getExhaustion":
+                    return FoodAccess.get(need().getFoodData());
+                case "getPotentialRespawnLocation":
+                    return null;
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -265,6 +278,18 @@ public final class PlayerBridge extends SenderBase {
                 }
                 case "getRespawnLocation":
                     return null;
+                case "setFireTicks": {
+                    ServerPlayer p = need();
+                    int ticks = (Integer) args[0];
+                    onServerThread(() -> p.setRemainingFireTicks(ticks));
+                    return null;
+                }
+                case "setExhaustion": {
+                    ServerPlayer p = need();
+                    float value = (Float) args[0];
+                    onServerThread(() -> FoodAccess.set(p.getFoodData(), value));
+                    return null;
+                }
                 case "setDisplayName":
                     displayName = (String) args[0];
                     return null;
