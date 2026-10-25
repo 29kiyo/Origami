@@ -185,6 +185,17 @@ public final class PlayerBridge extends SenderBase {
         }
         Class<?>[] types = method.getParameterTypes();
         int n = types.length;
+        if (methodName.equals("teleportAsync") && n >= 1 && args[0] instanceof Location target) {
+            java.util.concurrent.CompletableFuture<Boolean> future = new java.util.concurrent.CompletableFuture<>();
+            onServerThread(() -> {
+                try {
+                    future.complete(teleport(target));
+                } catch (RuntimeException e) {
+                    future.completeExceptionally(e);
+                }
+            });
+            return future;
+        }
         if (methodName.equals("teleport") && n >= 1) {
             if (args[0] instanceof Location loc) {
                 return teleport(loc);
@@ -230,6 +241,8 @@ public final class PlayerBridge extends SenderBase {
                     return need().getMaxAirSupply();
                 case "getRemainingAir":
                     return need().getAirSupply();
+                case "getActivePotionEffects":
+                    return java.util.List.of();
                 case "getPlayerListName":
                     return name;
                 case "isOnline":

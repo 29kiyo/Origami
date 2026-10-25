@@ -180,6 +180,28 @@ public final class LevelBridge implements InvocationHandler {
             // 現状はプレイヤーのみ。それ以外のエンティティは未対応のため null
             return level().getEntity(id) instanceof ServerPlayer p ? PlayerBridge.of(p) : null;
         }
+        if (methodName.equals("getChunkAt") && n >= 2 && args[0] instanceof Integer) {
+            boolean generate = n < 3 || (Boolean) args[2];
+            return ChunkBridge.load(this::level, (Integer) args[0], (Integer) args[1], generate);
+        }
+        if (methodName.equals("isChunkLoaded") && n == 2 && args[0] instanceof Integer) {
+            return level().getChunkSource().hasChunk((Integer) args[0], (Integer) args[1]);
+        }
+        if (methodName.equals("getChunkAtAsync") && n == 5) {
+            int cx = (Integer) args[0];
+            int cz = (Integer) args[1];
+            boolean gen = (Boolean) args[2];
+            @SuppressWarnings("unchecked")
+            java.util.function.Consumer<org.bukkit.Chunk> callback = (java.util.function.Consumer<org.bukkit.Chunk>) args[4];
+            Runnable task = () -> callback.accept(ChunkBridge.loadOrNull(this::level, cx, cz, gen));
+            MinecraftServer mc = OrigamiServer.get().minecraft();
+            if (mc == null || mc.isSameThread()) {
+                task.run();
+            } else {
+                mc.execute(task);
+            }
+            return null;
+        }
         if (n == 3 && methodName.equals("getBlockAt") && args[0] instanceof Integer) {
             return BlockBridge.of(proxy, (Integer) args[0], (Integer) args[1], (Integer) args[2]);
         }
