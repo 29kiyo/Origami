@@ -263,6 +263,8 @@ public final class PlayerBridge extends SenderBase {
                     }
                     return loc;
                 }
+                case "getRespawnLocation":
+                    return null;
                 case "setDisplayName":
                     displayName = (String) args[0];
                     return null;
