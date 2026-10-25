@@ -261,6 +261,18 @@ public final class PlayerBridge extends SenderBase {
                     return sleepingIgnored;
                 case "getCompassTarget":
                     return compassTarget != null ? compassTarget : LevelBridge.of(need().level()).getSpawnLocation();
+                case "isInWater":
+                    return need().isInWater();
+                case "isWhitelisted": {
+                    MinecraftServer mc = OrigamiServer.get().minecraft();
+                    ServerPlayer p = need();
+                    return mc != null && mc.getPlayerList().getWhiteList().get(p.nameAndId()) != null;
+                }
+                case "isBanned": {
+                    MinecraftServer mc = OrigamiServer.get().minecraft();
+                    ServerPlayer p = need();
+                    return mc != null && mc.getPlayerList().getBans().isBanned(p.nameAndId());
+                }
                 case "getPlayerListName":
                     return name;
                 case "isOnline":
@@ -382,6 +394,12 @@ public final class PlayerBridge extends SenderBase {
                         return need().getStats().getValue(net.minecraft.stats.Stats.CUSTOM.get(net.minecraft.stats.Stats.PLAY_TIME));
                     }
                     return UNHANDLED;
+                }
+                case "kickPlayer": {
+                    ServerPlayer p = need();
+                    String reason = (String) args[0];
+                    onServerThread(() -> p.connection.disconnect(Component.literal(reason == null ? "" : reason)));
+                    return null;
                 }
                 case "setDisplayName":
                     displayName = (String) args[0];
