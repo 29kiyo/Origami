@@ -172,6 +172,7 @@ public final class LevelBridge implements InvocationHandler {
                 case "getSeed" -> level().getSeed();
                 case "getPlayers" -> players();
                 case "getWorldBorder" -> WorldBorderBridge.of(this::level);
+                case "getLogicalHeight" -> level().dimensionType().logicalHeight();
                 case "getSpawnLocation" -> spawn();
                 default -> UNHANDLED;
             };
@@ -201,6 +202,13 @@ public final class LevelBridge implements InvocationHandler {
                 mc.execute(task);
             }
             return null;
+        }
+        if (methodName.equals("getBlockAt") && n == 1 && args[0] instanceof Location at) {
+            return BlockBridge.of(proxy, at.getBlockX(), at.getBlockY(), at.getBlockZ());
+        }
+        if (methodName.equals("getHighestBlockYAt") && n == 2 && args[0] instanceof Integer hx && args[1] instanceof Integer hz) {
+            // Bukkit default height map is MOTION_BLOCKING; ChunkAccess#getHeight returns the highest block's y
+            return level().getChunk(hx >> 4, hz >> 4).getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, hx, hz);
         }
         if (n == 3 && methodName.equals("getBlockAt") && args[0] instanceof Integer) {
             return BlockBridge.of(proxy, (Integer) args[0], (Integer) args[1], (Integer) args[2]);
