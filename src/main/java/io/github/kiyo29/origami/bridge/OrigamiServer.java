@@ -165,6 +165,8 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getMaxPlayers" -> list == null ? 0 : list.getMaxPlayers();
                 case "isPrimaryThread" -> s != null && s.isSameThread();
                 case "isStopping" -> s != null && !s.isRunning();
+                // Paper の既定値 (commands.suggest-player-names-when-null-tab-completions) は true
+                case "suggestPlayerNamesWhenNullTabCompletions" -> true;
                 case "getOnlineMode" -> s != null && s.usesAuthentication();
                 default -> UNHANDLED;
             };
