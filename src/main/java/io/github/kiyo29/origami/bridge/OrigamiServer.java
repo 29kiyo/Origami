@@ -185,6 +185,7 @@ public final class OrigamiServer implements InvocationHandler {
                     : first instanceof io.papermc.paper.ban.BanListType<?> banListType
                     ? (banListType.typeClass().equals(org.bukkit.ban.IpBanList.class) ? BanListBridge.ip() : BanListBridge.profile())
                     : UNHANDLED;
+            case "matchPlayer" -> matchPlayers(list, (String) first);
             case "getTag" -> TagBridge.get((String) first, (org.bukkit.NamespacedKey) args[1], (Class<?>) args[2]);
             case "getTags" -> TagBridge.getAll((String) first, (Class<?>) args[1]);
             case "getWorld" -> first instanceof String worldName ? LevelBridge.byName(worldName)
@@ -197,6 +198,25 @@ public final class OrigamiServer implements InvocationHandler {
                     : UNHANDLED;
             default -> UNHANDLED;
         };
+    }
+
+    /** Bukkit (CraftServer) と同じ: 完全一致 (大文字小文字無視) があればそれだけ、無ければ前方一致の全員。 */
+    private static List<Player> matchPlayers(PlayerList list, String name) {
+        List<Player> out = new ArrayList<>();
+        if (list == null || name == null) {
+            return out;
+        }
+        for (net.minecraft.server.level.ServerPlayer p : list.getPlayers()) {
+            Player player = PlayerBridge.of(p);
+            String n = player.getName();
+            if (n.equalsIgnoreCase(name)) {
+                return new ArrayList<>(List.of(player));
+            }
+            if (name.length() <= n.length() && n.regionMatches(true, 0, name, 0, name.length())) {
+                out.add(player);
+            }
+        }
+        return out;
     }
 
     private static java.util.List<net.kyori.adventure.audience.Audience> audiences(PlayerList list) {
