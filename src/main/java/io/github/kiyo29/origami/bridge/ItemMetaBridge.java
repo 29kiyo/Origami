@@ -52,6 +52,19 @@ final class ItemMetaBridge {
         Integer customModelData;
         final EnumSet<ItemFlag> flags = EnumSet.noneOf(ItemFlag.class);
         int repairCost;
+        // potion items only (PotionMeta)
+        boolean potion;
+        org.bukkit.potion.PotionType potionType;
+        org.bukkit.Color potionColor;
+        final List<org.bukkit.potion.PotionEffect> customEffects = new ArrayList<>();
+        String customPotionName;
+
+        boolean potionSame(State o) {
+            return potion == o.potion && Objects.equals(potionType, o.potionType)
+                    && Objects.equals(potionColor, o.potionColor) && customEffects.equals(o.customEffects)
+                    && Objects.equals(customPotionName, o.customPotionName);
+        }
+
         final Map<Enchantment, Integer> enchants = new LinkedHashMap<>();
 
         State copy() {
@@ -64,11 +77,19 @@ final class ItemMetaBridge {
             c.customModelData = customModelData;
             c.flags.addAll(flags);
             c.repairCost = repairCost;
+            c.potion = potion;
+            c.potionType = potionType;
+            c.potionColor = potionColor;
+            c.customEffects.addAll(customEffects);
+            c.customPotionName = customPotionName;
             c.enchants.putAll(enchants);
             return c;
         }
 
         boolean sameAs(State o) {
+            if (!potionSame(o)) {
+                return false;
+            }
             return Objects.equals(name, o.name) && Objects.equals(lore, o.lore) && damage == o.damage
                     && Objects.equals(maxDamage, o.maxDamage) && unbreakable == o.unbreakable
                     && Objects.equals(customModelData, o.customModelData) && flags.equals(o.flags)
@@ -80,7 +101,17 @@ final class ItemMetaBridge {
         return proxy(new State());
     }
 
+    static ItemMeta create(org.bukkit.Material material) {
+        State s = new State();
+        s.potion = PotionBridge.isPotionMaterial(material);
+        return proxy(s);
+    }
+
     private static ItemMeta proxy(State s) {
+        if (s.potion) {
+            return (ItemMeta) Proxy.newProxyInstance(CombinedPotionMeta.class.getClassLoader(),
+                    new Class<?>[] {CombinedPotionMeta.class}, new MetaHandler(s));
+        }
         return (ItemMeta) Proxy.newProxyInstance(CombinedMeta.class.getClassLoader(),
                 new Class<?>[] {CombinedMeta.class}, new MetaHandler(s));
     }
@@ -129,6 +160,9 @@ final class ItemMetaBridge {
             return false;
         }
         State s = read(h);
+        if (s.potion && PotionBridge.nonEmpty(s)) {
+            return true;
+        }
         return s.name != null || (s.lore != null && !s.lore.isEmpty()) || s.damage > 0 || s.unbreakable
                 || s.customModelData != null || !s.enchants.isEmpty();
     }
@@ -154,6 +188,7 @@ final class ItemMetaBridge {
         s.unbreakable = h.has(DataComponents.UNBREAKABLE);
         CustomModelData cmd = h.get(DataComponents.CUSTOM_MODEL_DATA);
         s.customModelData = cmd == null || cmd.floats().isEmpty() ? null : cmd.floats().get(0).intValue();
+        PotionBridge.read(h, s);
         net.minecraft.world.item.enchantment.ItemEnchantments ench = h.get(DataComponents.ENCHANTMENTS);
         if (ench != null) {
             for (var holder : ench.keySet()) {
@@ -203,6 +238,7 @@ final class ItemMetaBridge {
             h.set(DataComponents.CUSTOM_MODEL_DATA,
                     new CustomModelData(List.of(Float.valueOf(s.customModelData)), List.of(), List.of(), List.of()));
         }
+        PotionBridge.write(h, s);
         if (s.enchants.isEmpty()) {
             h.set(DataComponents.ENCHANTMENTS, net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
         } else {
@@ -382,6 +418,12 @@ final class ItemMetaBridge {
                         }
                     }
                     return false;
+                }
+                case "hasCustomEffects", "getCustomEffects", "getAllEffects", "addCustomEffect", "removeCustomEffect",
+                        "hasCustomEffect", "clearCustomEffects", "hasColor", "getColor", "setColor", "computeEffectiveColor",
+                        "hasBasePotionType", "getBasePotionType", "setBasePotionType", "hasCustomPotionName",
+                        "getCustomPotionName", "setCustomPotionName" -> {
+                    return PotionBridge.handle(s, method.getName(), a);
                 }
                 case "hasAttributeModifiers" -> { return false; }
                 case "setVersion" -> { return null; }

@@ -45,7 +45,7 @@ final class ItemFactoryBridge implements InvocationHandler {
         Object[] a = args == null ? new Object[0] : args;
         switch (method.getName()) {
             case "getItemMeta" -> {
-                return a[0] == Material.AIR ? null : ItemMetaBridge.create();
+                return a[0] == Material.AIR ? null : ItemMetaBridge.create((Material) a[0]);
             }
             case "isApplicable" -> {
                 return a[0] == null || ItemMetaBridge.isMeta(a[0]);
