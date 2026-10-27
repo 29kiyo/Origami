@@ -22,5 +22,8 @@
   "command.error": "このコマンドの実行中に内部エラーが発生しました。",
   "log.command.register_failed": "%s のコマンドを登録できませんでした",
   "log.command.perm_duplicate": "プラグイン %s が権限 %s を登録しようとしましたが、すでに登録されています。",
+  "log.command.alias_added": "コマンドの別名 /%s -> /%s を追加しました。",
+  "log.command.alias_conflict": "コマンドの別名 /%s (/%s 用) は、同名のコマンドがすでにあるため追加しませんでした。",
+  "log.command.alias_invalid": "commandAliases の不正な項目を無視しました: %s -> %s",
   "log.command.conflict": "コマンド /%s (プラグイン %s) は、同名のコマンドがすでにあるため Minecraft のコマンドとして公開しませんでした。名前空間つきの形式を使ってください。"
 }

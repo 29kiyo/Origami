@@ -83,17 +83,57 @@ public final class CommandBridge {
                 }
                 continue;
             }
-            d.register(buildNode(label));
+            d.register(buildNode(label, label));
             REGISTERED.add(label);
             added = true;
         }
+        added |= syncAliases(d, map);
         if (added) {
             refreshClients();
         }
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildNode(String label) {
-        return LiteralArgumentBuilder.<CommandSourceStack>literal(label)
+    /** config の commandAliases (別名 -> 元のラベル) を載せる。既存のノードは触らず、新しい名前を足すだけ。 */
+    private static boolean syncAliases(CommandDispatcher<CommandSourceStack> d, SimpleCommandMap map) {
+        Map<String, String> aliases = Origami.config().commandAliases;
+        if (aliases == null || aliases.isEmpty()) {
+            return false;
+        }
+        boolean added = false;
+        for (Map.Entry<String, String> e : new ArrayList<>(aliases.entrySet())) {
+            String alias = e.getKey() == null ? "" : e.getKey().trim().toLowerCase(java.util.Locale.ROOT);
+            String target = e.getValue() == null ? "" : e.getValue().trim().toLowerCase(java.util.Locale.ROOT);
+            if (alias.isEmpty() || target.isEmpty() || alias.equals(target)
+                    || alias.indexOf(' ') >= 0 || target.indexOf(' ') >= 0) {
+                if (WARNED.add(alias + "|" + target)) {
+                    Origami.LOGGER.warn(Lang.tr("log.command.alias_invalid", e.getKey(), e.getValue()));
+                }
+                continue;
+            }
+            if (REGISTERED.contains(alias)) {
+                continue;
+            }
+            Command command = map.getKnownCommands().get(target);
+            if (command == null || command.getClass().getName().startsWith("org.bukkit.command.defaults.")) {
+                // 元のコマンドがまだ無い (プラグインが未有効)。次の sync で再試行する
+                continue;
+            }
+            if (d.getRoot().getChild(alias) != null) {
+                if (WARNED.add("alias:" + alias)) {
+                    Origami.LOGGER.info(Lang.tr("log.command.alias_conflict", alias, target));
+                }
+                continue;
+            }
+            d.register(buildNode(alias, target));
+            REGISTERED.add(alias);
+            Origami.LOGGER.info(Lang.tr("log.command.alias_added", alias, target));
+            added = true;
+        }
+        return added;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildNode(String name, String label) {
+        return LiteralArgumentBuilder.<CommandSourceStack>literal(name)
                 .requires(source -> usable(label, source))
                 .executes(ctx -> run(ctx.getSource(), label, ""))
                 .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("args", StringArgumentType.greedyString())

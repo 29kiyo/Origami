@@ -23,6 +23,9 @@ public final class OrigamiConfig {
     /** NMS / CraftBukkit 直接依存のプラグインを見つけたときの動作: "error"(読み込み拒否) / "warn" / "off" */
     public String nmsDetection = "error";
 
+    /** コマンドの別名 ("新しい名前": "元のラベル")。バニラや他 Mod のコマンドには触らず、新しい名前を足すだけ。既定は空。 */
+    public java.util.Map<String, String> commandAliases = new java.util.LinkedHashMap<>();
+
     public static OrigamiConfig load(Path path, Logger log) {
         OrigamiConfig cfg = new OrigamiConfig();
         if (Files.exists(path)) {
@@ -37,6 +40,9 @@ public final class OrigamiConfig {
         }
         if (cfg.language == null) {
             cfg.language = "en_us";
+        }
+        if (cfg.commandAliases == null) {
+            cfg.commandAliases = new java.util.LinkedHashMap<>();
         }
         cfg.save(path, log);
         return cfg;

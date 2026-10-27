@@ -22,5 +22,8 @@
   "command.error": "An internal error occurred while attempting to perform this command.",
   "log.command.register_failed": "Could not register the commands of %s",
   "log.command.perm_duplicate": "Plugin %s tried to register permission %s, but it is already registered.",
+  "log.command.alias_added": "Command alias /%s -> /%s is available.",
+  "log.command.alias_conflict": "Command alias /%s (for /%s) was not added: a command with that name already exists.",
+  "log.command.alias_invalid": "Ignored an invalid commandAliases entry: %s -> %s",
   "log.command.conflict": "Command /%s (plugin %s) was not exposed as a Minecraft command: a command with the same name already exists. Use the namespaced form instead."
 }
