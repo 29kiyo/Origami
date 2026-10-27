@@ -191,6 +191,10 @@ public final class PlayerBridge extends SenderBase {
         if (targetResult != io.github.kiyo29.origami.bridge.TargetBlockBridge.NONE) {
             return targetResult;
         }
+        Object banResult = io.github.kiyo29.origami.bridge.BanListBridge.handlePlayer(ref.get(), method, args);
+        if (banResult != io.github.kiyo29.origami.bridge.BanListBridge.NONE) {
+            return banResult;
+        }
         Object effectResult = io.github.kiyo29.origami.bridge.EffectBridge.handle(ref.get(), method, args);
         if (effectResult != io.github.kiyo29.origami.bridge.EffectBridge.NONE) {
             return effectResult;

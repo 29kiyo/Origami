@@ -218,6 +218,75 @@ public final class BanListBridge {
         }
     }
 
+    /** Returned by handlePlayer / handleOfflinePlayer when the method is not a ban method. */
+    public static final Object NONE = new Object();
+
+    /** Server#getBannedPlayers. */
+    public static Set<org.bukkit.OfflinePlayer> bannedPlayers() {
+        Set<org.bukkit.OfflinePlayer> out = new HashSet<>();
+        for (UserBanListEntry e : need().getPlayerList().getBans().getEntries()) {
+            NameAndId u = e.getUser();
+            if (u != null) {
+                out.add(OfflinePlayerBridge.of(u.id(), u.name()));
+            }
+        }
+        return out;
+    }
+
+    /** Server#getIPBans. */
+    public static Set<String> ipBans() {
+        Set<String> out = new HashSet<>();
+        for (IpBanListEntry e : need().getPlayerList().getIpBans().getEntries()) {
+            if (e.getUser() != null) {
+                out.add(e.getUser());
+            }
+        }
+        return out;
+    }
+
+    /** Server#banIP (String or InetAddress). */
+    public static void banIp(Object address) {
+        need().getPlayerList().getIpBans().add(new IpBanListEntry(ipTarget(address)));
+    }
+
+    /** Server#unbanIP (String or InetAddress). */
+    public static void unbanIp(Object address) {
+        need().getPlayerList().getIpBans().remove(ipTarget(address));
+    }
+
+    private static NameAndId profileId(java.util.UUID id, String name) {
+        return new NameAndId(id, name != null ? name : id.toString());
+    }
+
+    /** OfflinePlayer#isBanned / OfflinePlayer#ban (reason, expiry, source). */
+    public static Object handleOfflinePlayer(java.util.UUID id, String name, Method method, Object[] args) {
+        int n = args == null ? 0 : args.length;
+        String m = method.getName();
+        if (m.equals("isBanned") && n == 0) {
+            return need().getPlayerList().getBans().isBanned(profileId(id, name));
+        }
+        Class<?>[] t = method.getParameterTypes();
+        if (m.equals("ban") && (n == 3 || n == 4) && t[0] == String.class && t[2] == String.class) {
+            UserBanListEntry e = new UserBanListEntry(profileId(id, name), null, (String) args[2], expiry(args[1]), (String) args[0]);
+            need().getPlayerList().getBans().add(e);
+            return wrap(e);
+        }
+        return NONE;
+    }
+
+    /** Player version of handleOfflinePlayer. ban(..., kickPlayer = true) also disconnects (approximation: the reason is the message). */
+    public static Object handlePlayer(ServerPlayer p, Method method, Object[] args) {
+        if (p == null) {
+            return NONE;
+        }
+        Object r = handleOfflinePlayer(p.getUUID(), p.getName().getString(), method, args);
+        if (r != NONE && method.getName().equals("ban") && args != null && args.length == 4 && Boolean.TRUE.equals(args[3])) {
+            String reason = (String) args[0];
+            p.connection.disconnect(net.minecraft.network.chat.Component.literal(reason == null ? "" : reason));
+        }
+        return r;
+    }
+
     private static Entry wrap(UserBanListEntry e) {
         NameAndId u = e.getUser();
         return new Entry(false, u == null ? null : u.name(), u, e.getCreated(), e.getSource(), e.getExpires(), e.getReason());

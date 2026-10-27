@@ -38,6 +38,10 @@ final class OfflinePlayerBridge {
         return create(UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)), name);
     }
 
+    static OfflinePlayer of(UUID id, String name) {
+        return create(id, name);
+    }
+
     private static OfflinePlayer create(UUID id, String knownName) {
         return (OfflinePlayer) Proxy.newProxyInstance(
                 OfflinePlayer.class.getClassLoader(), new Class<?>[] {OfflinePlayer.class}, new Handler(id, knownName));
@@ -89,6 +93,11 @@ final class OfflinePlayerBridge {
                     }
                     default -> { }
                 }
+            }
+            ServerPlayer banOnline = online(uuid);
+            Object banResult = BanListBridge.handleOfflinePlayer(uuid, banOnline != null ? banOnline.getName().getString() : knownName, method, args);
+            if (banResult != BanListBridge.NONE) {
+                return banResult;
             }
             if (method.getName().equals("getStatistic") && method.getParameterCount() == 1) {
                 ServerPlayer onlinePlayer = online(uuid);

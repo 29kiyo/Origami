@@ -167,6 +167,8 @@ public final class OrigamiServer implements InvocationHandler {
                 case "isStopping" -> s != null && !s.isRunning();
                 // Paper の既定値 (commands.suggest-player-names-when-null-tab-completions) は true
                 case "suggestPlayerNamesWhenNullTabCompletions" -> true;
+                case "getBannedPlayers" -> BanListBridge.bannedPlayers();
+                case "getIPBans" -> BanListBridge.ipBans();
                 case "getOnlineMode" -> s != null && s.usesAuthentication();
                 default -> UNHANDLED;
             };
@@ -188,6 +190,14 @@ public final class OrigamiServer implements InvocationHandler {
                     ? (banListType.typeClass().equals(org.bukkit.ban.IpBanList.class) ? BanListBridge.ip() : BanListBridge.profile())
                     : UNHANDLED;
             case "matchPlayer" -> matchPlayers(list, (String) first);
+            case "banIP" -> {
+                BanListBridge.banIp(first);
+                yield null;
+            }
+            case "unbanIP" -> {
+                BanListBridge.unbanIp(first);
+                yield null;
+            }
             case "getTag" -> TagBridge.get((String) first, (org.bukkit.NamespacedKey) args[1], (Class<?>) args[2]);
             case "getTags" -> TagBridge.getAll((String) first, (Class<?>) args[1]);
             case "getWorld" -> first instanceof String worldName ? LevelBridge.byName(worldName)
