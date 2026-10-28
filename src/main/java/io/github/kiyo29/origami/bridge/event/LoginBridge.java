@@ -34,7 +34,17 @@ final class LoginBridge {
     private LoginBridge() { }
 
     /** @return false if a plugin disallowed the login (the player has been disconnected). */
+    /** Never blocks a join because of an unexpected failure inside the event plumbing. */
     static boolean allow(ServerPlayer sp, Player player) {
+        try {
+            return allow0(sp, player);
+        } catch (Throwable t) {
+            Origami.LOGGER.error("Login events failed; letting the player in", t);
+            return true;
+        }
+    }
+
+    private static boolean allow0(ServerPlayer sp, Player player) {
         InetAddress address = address(sp);
         UUID id = sp.getUUID();
         String name = sp.getName().getString();

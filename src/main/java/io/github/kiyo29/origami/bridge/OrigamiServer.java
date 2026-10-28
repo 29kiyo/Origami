@@ -182,6 +182,7 @@ public final class OrigamiServer implements InvocationHandler {
             case "dispatchCommand" -> dispatchCommand((CommandSender) first, (String) args[1]);
             // Bukkit の getPlayer(String) は部分一致だが、現状は完全一致のみ (Phase 6 で見直す)
             case "getPlayer" -> first instanceof UUID id ? playerById(list, id) : playerByName(list, (String) first);
+            case "createProfile", "createProfileExact" -> ProfileBridge.create(args);
             case "getPlayerExact" -> playerByName(list, (String) first);
             case "getOfflinePlayer" -> OfflinePlayerBridge.get(first);
             // BanList.Type 版と BanListType 版の両方 (BanListBridge)。Type.NAME / PROFILE は Profile 版、IP は IP 版
