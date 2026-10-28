@@ -64,6 +64,9 @@ public final class EventBridge {
 
     private static void onJoin(ServerPlayer serverPlayer) {
         Player player = PlayerBridge.of(serverPlayer);
+        if (!LoginBridge.allow(serverPlayer, player)) {
+            return;
+        }
         Component message = Component.translatable("multiplayer.player.joined",
                 Component.text(serverPlayer.getName().getString())).color(NamedTextColor.YELLOW);
         fire(new PlayerJoinEvent(player, message));
