@@ -46,6 +46,11 @@ public abstract class SenderBase implements InvocationHandler {
     /** § 色コードつき (legacy) の文字列をこの送信先へ届ける。どのスレッドから呼ばれてもよい。 */
     protected abstract void deliver(String legacyMessage);
 
+    /** Target for InvocationHandler#invokeDefault. Must be a java.lang.reflect.Proxy instance (PlayerBridge overrides this). */
+    protected Object defaultTarget(Object proxy) {
+        return proxy;
+    }
+
     protected Object extra(Object proxy, Method method, Object[] args) throws Throwable {
         return UNHANDLED;
     }
@@ -103,7 +108,7 @@ public abstract class SenderBase implements InvocationHandler {
             return handled;
         }
         if (method.isDefault()) {
-            return InvocationHandler.invokeDefault(proxy, method, args);
+            return InvocationHandler.invokeDefault(defaultTarget(proxy), method, args);
         }
         throw UnimplementedCalls.exception(method);
     }

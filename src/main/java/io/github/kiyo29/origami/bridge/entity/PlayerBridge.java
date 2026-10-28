@@ -44,6 +44,19 @@ public final class PlayerBridge extends SenderBase {
     private final Set<UUID> hiddenPlayers = ConcurrentHashMap.newKeySet();
     private final Map<String, Map<org.bukkit.plugin.Plugin, org.bukkit.metadata.MetadataValue>> metadata = new ConcurrentHashMap<>();
     private volatile org.bukkit.event.entity.EntityDamageEvent lastDamageCause;
+    private final Player twin;
+    private volatile boolean permLastOp;
+    private final org.bukkit.permissions.ServerOperator permOperator = new org.bukkit.permissions.ServerOperator() {
+        @Override
+        public boolean isOp() {
+            return senderIsOp();
+        }
+
+        @Override
+        public void setOp(boolean value) {
+            senderSetOp(value);
+        }
+    };
     private final Player proxy;
 
     private PlayerBridge(ServerPlayer player) {
@@ -51,8 +64,10 @@ public final class PlayerBridge extends SenderBase {
         this.ref = new WeakReference<>(player);
         this.name = player.getName().getString();
         this.firstJoin = io.github.kiyo29.origami.bridge.PlayerHistory.joined(uuid);
-        this.proxy = (Player) Proxy.newProxyInstance(
+        this.twin = (Player) Proxy.newProxyInstance(
                 Player.class.getClassLoader(), new Class<?>[] {Player.class}, this);
+        this.proxy = PlayerClassGen.create(this);
+        ((org.bukkit.craftbukkit.entity.CraftHumanEntity) this.proxy).perm = new org.bukkit.permissions.PermissibleBase(permOperator);
     }
 
     /** 退出時にキャッシュから外す。別の ServerPlayer に差し替わっていたら外さない。 */
@@ -77,6 +92,54 @@ public final class PlayerBridge extends SenderBase {
     /** まだオンラインでなければ null。 */
     public @Nullable ServerPlayer serverPlayer() {
         return ref.get();
+    }
+
+    private static final Map<Method, java.util.Optional<Method>> PERM_METHODS = new ConcurrentHashMap<>();
+
+    private static java.util.Optional<Method> permissionTarget(Method m) {
+        return PERM_METHODS.computeIfAbsent(m, k -> {
+            for (Class<?> c : new Class<?>[] {org.bukkit.permissions.Permissible.class, org.bukkit.permissions.ServerOperator.class}) {
+                try {
+                    return java.util.Optional.of(c.getMethod(k.getName(), k.getParameterTypes()));
+                } catch (NoSuchMethodException ignored) {
+                    // try next
+                }
+            }
+            return java.util.Optional.empty();
+        });
+    }
+
+    /** Permissible / ServerOperator calls go to the "perm" field, which permission plugins (LuckPerms) replace reflectively. */
+    private Object permissionCall(Method method, Object[] args) {
+        java.util.Optional<Method> target = permissionTarget(method);
+        if (target.isEmpty()) {
+            return UNHANDLED;
+        }
+        org.bukkit.permissions.PermissibleBase perm = ((org.bukkit.craftbukkit.entity.CraftHumanEntity) proxy).perm;
+        boolean op = senderIsOp();
+        if (op != permLastOp) {
+            permLastOp = op;
+            perm.recalculatePermissions();
+        }
+        try {
+            return target.get().invoke(perm, args);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            Throwable c = e.getCause();
+            if (c instanceof RuntimeException re) {
+                throw re;
+            }
+            if (c instanceof Error er) {
+                throw er;
+            }
+            throw new IllegalStateException(c);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    protected Object defaultTarget(Object proxyObject) {
+        return twin;
     }
 
     private boolean isOnline() {
@@ -175,6 +238,10 @@ public final class PlayerBridge extends SenderBase {
 
     @Override
     protected Object extra(Object proxyObject, Method method, Object[] args) {
+        Object permResult = permissionCall(method, args);
+        if (permResult != UNHANDLED) {
+            return permResult;
+        }
         String methodName = method.getName();
         if (method.getDeclaringClass() == Object.class) {
             return switch (methodName) {
