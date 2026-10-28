@@ -39,7 +39,8 @@ final class LoaderRules {
     private LoaderRules() { }
 
     static boolean isDenied(String className) {
-        if (className.equals("org.bukkit.craftbukkit.CraftServer")) {
+        if (className.equals("org.bukkit.craftbukkit.CraftServer")
+                || className.equals("org.bukkit.craftbukkit.entity.CraftHumanEntity")) {
             return false; // CraftBukkit compat allow-list (marker class)
         }
         for (String p : DENIED_EXCEPTIONS) {

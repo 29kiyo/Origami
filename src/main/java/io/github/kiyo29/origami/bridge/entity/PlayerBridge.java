@@ -332,6 +332,14 @@ public final class PlayerBridge extends SenderBase {
                     return lastDamageCause;
                 case "getPlayerListName":
                     return name;
+                case "locale": {
+                    String lang = need().clientInformation().language();
+                    return lang == null || lang.isEmpty()
+                            ? java.util.Locale.US
+                            : java.util.Locale.forLanguageTag(lang.replace('_', '-'));
+                }
+                case "getPlayer":
+                    return this.proxy;
                 case "isOnline":
                 case "isValid":
                     return isOnline();
