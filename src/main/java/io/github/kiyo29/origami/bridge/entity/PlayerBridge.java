@@ -111,6 +111,15 @@ public final class PlayerBridge extends SenderBase {
 
     /** Permissible / ServerOperator calls go to the "perm" field, which permission plugins (LuckPerms) replace reflectively. */
     private Object permissionCall(Method method, Object[] args) {
+        // Like CraftPlayer: isOp / setOp use the server op list, never the (replaceable) perm field.
+        // Permissible implementations such as LuckPerms hold this Player as their ServerOperator, so forwarding would recurse forever.
+        if (method.getName().equals("isOp") && method.getParameterCount() == 0) {
+            return senderIsOp();
+        }
+        if (method.getName().equals("setOp") && method.getParameterCount() == 1) {
+            senderSetOp((Boolean) args[0]);
+            return null;
+        }
         java.util.Optional<Method> target = permissionTarget(method);
         if (target.isEmpty()) {
             return UNHANDLED;
@@ -399,6 +408,16 @@ public final class PlayerBridge extends SenderBase {
                     return lastDamageCause;
                 case "getPlayerListName":
                     return name;
+                case "updateCommands": {
+                    ServerPlayer p = need();
+                    onServerThread(() -> {
+                        MinecraftServer mc = OrigamiServer.get().minecraft();
+                        if (mc != null) {
+                            mc.getCommands().sendCommands(p);
+                        }
+                    });
+                    return null;
+                }
                 case "locale": {
                     String lang = need().clientInformation().language();
                     return lang == null || lang.isEmpty()
