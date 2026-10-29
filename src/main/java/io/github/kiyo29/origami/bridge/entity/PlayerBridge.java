@@ -418,6 +418,10 @@ public final class PlayerBridge extends SenderBase {
                     });
                     return null;
                 }
+                case "getLocale": {
+                    String lang = need().clientInformation().language();
+                    return lang == null || lang.isEmpty() ? "en_us" : lang.toLowerCase(java.util.Locale.ROOT);
+                }
                 case "locale": {
                     String lang = need().clientInformation().language();
                     return lang == null || lang.isEmpty()
