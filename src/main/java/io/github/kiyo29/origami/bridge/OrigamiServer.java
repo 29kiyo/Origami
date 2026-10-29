@@ -18,6 +18,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.plugin.SimplePluginManager;
 import io.github.kiyo29.origami.loader.OrigamiPluginManager;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.SimpleServicesManager;
@@ -50,6 +51,7 @@ public final class OrigamiServer implements InvocationHandler {
     private final Server proxy;
     private final SimpleCommandMap commandMap;
     private final OrigamiPluginManager pluginManager;
+    private final SimplePluginManager pluginManagerFacade;
     private final SimpleServicesManager servicesManager;
     private final OrigamiHelpMap helpMap = new OrigamiHelpMap();
     private volatile MinecraftServer minecraft;
@@ -70,6 +72,12 @@ public final class OrigamiServer implements InvocationHandler {
         // SimpleCommandMap / OrigamiPluginManager は Server を要求するため、Proxy を作ってから構築する
         this.commandMap = new OrigamiCommandMap(proxy);
         this.pluginManager = new OrigamiPluginManager(proxy, commandMap);
+        // Server#getPluginManager returns a real SimplePluginManager (LuckPerms checks instanceof and replaces its public maps).
+        // It delegates everything to paperPluginManager, which is our OrigamiPluginManager; that class reads the maps back from the facade.
+        SimplePluginManager facade = new SimplePluginManager(proxy, commandMap);
+        facade.paperPluginManager = pluginManager;
+        pluginManager.bind(facade);
+        this.pluginManagerFacade = facade;
         this.servicesManager = new SimpleServicesManager();
     }
 
@@ -143,7 +151,7 @@ public final class OrigamiServer implements InvocationHandler {
                 case "getMinecraftVersion" -> minecraftVersion;
                 case "getLogger" -> logger;
                 case "getPluginsFolder" -> FabricLoader.getInstance().getGameDir().resolve("plugins").toFile();
-                case "getPluginManager" -> pluginManager;
+                case "getPluginManager" -> pluginManagerFacade;
                 case "getServicesManager" -> servicesManager;
                 case "getCommandMap" -> commandMap;
                 case "getConsoleSender" -> ConsoleSenderBridge.console();

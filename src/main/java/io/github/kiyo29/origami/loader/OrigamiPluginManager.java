@@ -62,16 +62,34 @@ public final class OrigamiPluginManager implements PluginManager {
 
     private final List<Plugin> plugins = new ArrayList<>();
     private final Map<String, Plugin> lookupNames = new HashMap<>();
-    private final Map<String, Permission> permissions = new HashMap<>();
-    private final Map<Boolean, Set<Permission>> defaultPerms = new LinkedHashMap<>();
-    private final Map<String, Map<Permissible, Boolean>> permSubs = new HashMap<>();
-    private final Map<Boolean, Map<Permissible, Boolean>> defSubs = new HashMap<>();
+
+    /** The SimplePluginManager facade returned by Server#getPluginManager. Permission maps live there so that
+     *  permission plugins (LuckPerms) can replace them reflectively; they are re-read on every call. */
+    private org.bukkit.plugin.SimplePluginManager facade;
+
+    public void bind(org.bukkit.plugin.SimplePluginManager facade) {
+        this.facade = facade;
+    }
+
+    private Map<String, Permission> permissions() {
+        return facade.permissions;
+    }
+
+    private Map<Boolean, Set<Permission>> defaultPerms() {
+        return facade.defaultPerms;
+    }
+
+    private Map<String, Map<Permissible, Boolean>> permSubs() {
+        return facade.permSubs;
+    }
+
+    private Map<Boolean, Map<Permissible, Boolean>> defSubs() {
+        return facade.defSubs;
+    }
 
     public OrigamiPluginManager(Server server, SimpleCommandMap commandMap) {
         this.server = server;
         this.commandMap = commandMap;
-        defaultPerms.put(true, new LinkedHashSet<>());
-        defaultPerms.put(false, new LinkedHashSet<>());
     }
 
     public SimpleCommandMap commandMap() {
@@ -308,8 +326,8 @@ public final class OrigamiPluginManager implements PluginManager {
 
     private void unregisterPermissions(Plugin plugin) {
         for (Permission perm : plugin.getDescription().getPermissions()) {
-            defaultPerms.get(true).remove(perm);
-            defaultPerms.get(false).remove(perm);
+            defaultPerms().get(true).remove(perm);
+            defaultPerms().get(false).remove(perm);
             removePermission(perm);
         }
         dirtyPermissibles(true);
@@ -421,7 +439,7 @@ public final class OrigamiPluginManager implements PluginManager {
 
     @Override
     public Permission getPermission(String name) {
-        return permissions.get(name.toLowerCase(Locale.ROOT));
+        return permissions().get(name.toLowerCase(Locale.ROOT));
     }
 
     @Override
@@ -431,10 +449,10 @@ public final class OrigamiPluginManager implements PluginManager {
 
     private void addPermission(Permission perm, boolean dirty) {
         String name = perm.getName().toLowerCase(Locale.ROOT);
-        if (permissions.containsKey(name)) {
+        if (permissions().containsKey(name)) {
             throw new IllegalArgumentException("The permission " + name + " is already defined!");
         }
-        permissions.put(name, perm);
+        permissions().put(name, perm);
         calculatePermissionDefault(perm, dirty);
     }
 
@@ -449,7 +467,7 @@ public final class OrigamiPluginManager implements PluginManager {
 
     @Override
     public Set<Permission> getDefaultPermissions(boolean op) {
-        return Set.copyOf(defaultPerms.get(op));
+        return Set.copyOf(defaultPerms().get(op));
     }
 
     @Override
@@ -459,14 +477,14 @@ public final class OrigamiPluginManager implements PluginManager {
 
     @Override
     public void removePermission(String name) {
-        permissions.remove(name.toLowerCase(Locale.ROOT));
+        permissions().remove(name.toLowerCase(Locale.ROOT));
     }
 
     @Override
     public void recalculatePermissionDefaults(Permission perm) {
-        if (perm != null && permissions.containsKey(perm.getName().toLowerCase(Locale.ROOT))) {
-            defaultPerms.get(true).remove(perm);
-            defaultPerms.get(false).remove(perm);
+        if (perm != null && permissions().containsKey(perm.getName().toLowerCase(Locale.ROOT))) {
+            defaultPerms().get(true).remove(perm);
+            defaultPerms().get(false).remove(perm);
             calculatePermissionDefault(perm, true);
         }
     }
@@ -474,13 +492,13 @@ public final class OrigamiPluginManager implements PluginManager {
     private void calculatePermissionDefault(Permission perm, boolean dirty) {
         PermissionDefault def = perm.getDefault();
         if (def == PermissionDefault.OP || def == PermissionDefault.TRUE) {
-            defaultPerms.get(true).add(perm);
+            defaultPerms().get(true).add(perm);
             if (dirty) {
                 dirtyPermissibles(true);
             }
         }
         if (def == PermissionDefault.NOT_OP || def == PermissionDefault.TRUE) {
-            defaultPerms.get(false).add(perm);
+            defaultPerms().get(false).add(perm);
             if (dirty) {
                 dirtyPermissibles(false);
             }
@@ -495,58 +513,58 @@ public final class OrigamiPluginManager implements PluginManager {
 
     @Override
     public void subscribeToPermission(String permission, Permissible permissible) {
-        permSubs.computeIfAbsent(permission.toLowerCase(Locale.ROOT), k -> new WeakHashMap<>()).put(permissible, true);
+        permSubs().computeIfAbsent(permission.toLowerCase(Locale.ROOT), k -> new WeakHashMap<>()).put(permissible, true);
     }
 
     @Override
     public void unsubscribeFromPermission(String permission, Permissible permissible) {
         String name = permission.toLowerCase(Locale.ROOT);
-        Map<Permissible, Boolean> map = permSubs.get(name);
+        Map<Permissible, Boolean> map = permSubs().get(name);
         if (map != null) {
             map.remove(permissible);
             if (map.isEmpty()) {
-                permSubs.remove(name);
+                permSubs().remove(name);
             }
         }
     }
 
     @Override
     public Set<Permissible> getPermissionSubscriptions(String permission) {
-        Map<Permissible, Boolean> map = permSubs.get(permission.toLowerCase(Locale.ROOT));
+        Map<Permissible, Boolean> map = permSubs().get(permission.toLowerCase(Locale.ROOT));
         return map == null ? Set.of() : Set.copyOf(map.keySet());
     }
 
     @Override
     public void subscribeToDefaultPerms(boolean op, Permissible permissible) {
-        defSubs.computeIfAbsent(op, k -> new WeakHashMap<>()).put(permissible, true);
+        defSubs().computeIfAbsent(op, k -> new WeakHashMap<>()).put(permissible, true);
     }
 
     @Override
     public void unsubscribeFromDefaultPerms(boolean op, Permissible permissible) {
-        Map<Permissible, Boolean> map = defSubs.get(op);
+        Map<Permissible, Boolean> map = defSubs().get(op);
         if (map != null) {
             map.remove(permissible);
             if (map.isEmpty()) {
-                defSubs.remove(op);
+                defSubs().remove(op);
             }
         }
     }
 
     @Override
     public Set<Permissible> getDefaultPermSubscriptions(boolean op) {
-        Map<Permissible, Boolean> map = defSubs.get(op);
+        Map<Permissible, Boolean> map = defSubs().get(op);
         return map == null ? Set.of() : Set.copyOf(map.keySet());
     }
 
     @Override
     public Set<Permission> getPermissions() {
-        return new HashSet<>(permissions.values());
+        return new HashSet<>(permissions().values());
     }
 
     public void clearPermissions() {
-        permissions.clear();
-        defaultPerms.get(true).clear();
-        defaultPerms.get(false).clear();
+        permissions().clear();
+        defaultPerms().get(true).clear();
+        defaultPerms().get(false).clear();
     }
 
     @Override
