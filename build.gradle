@@ -1,5 +1,6 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
+    id 'me.modmuss50.mod-publish-plugin' version "${mod_publish_plugin_version}"
 }
 
 base {
@@ -134,5 +135,58 @@ jar {
     }
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+// --- 公開 (Modrinth / CurseForge)。手元から ./gradlew publishMods で実行する ---
+// ・既定は dry run (何も送信せず、公開物を build 配下に保存するだけ)
+// ・実際に送るのは -PorigamiPublish=true を付けたときだけ
+// ・トークンと ID は ~/.gradle/gradle.properties (リポジトリの外) から読む。このファイルには値を書かない
+//     origami_modrinth_token / origami_modrinth_id / origami_curseforge_token / origami_curseforge_id
+// ・トークンを -P で渡さない (シェルの履歴に残る)。--debug や --scan は使わない
+def origamiPublish = providers.gradleProperty('origamiPublish').map { it == 'true' }.orElse(false)
+def mrToken = providers.gradleProperty('origami_modrinth_token').orElse('')
+def mrId = providers.gradleProperty('origami_modrinth_id').orElse('')
+def cfToken = providers.gradleProperty('origami_curseforge_token').orElse('')
+def cfId = providers.gradleProperty('origami_curseforge_id').orElse('')
+// dry run でもプラグインが空の値を嫌がる場合に備えた仮の値 (実際の送信では使われない)
+def mrTokenOrDry = providers.gradleProperty('origami_modrinth_token').filter { !it.isBlank() }.orElse('DRYRUN')
+def cfTokenOrDry = providers.gradleProperty('origami_curseforge_token').filter { !it.isBlank() }.orElse('DRYRUN')
+
+publishMods {
+    file = jar.archiveFile
+    changelog = providers.fileContents(layout.projectDirectory.file('RELEASE_NOTES.md')).asText
+    type = ALPHA
+    displayName = "Origami ${project.version}"
+    modLoaders.add('fabric')
+    dryRun = origamiPublish.map { !it }
+
+    modrinth {
+        accessToken = mrTokenOrDry
+        projectId = mrId.map { it.isBlank() ? 'DRYRUN' : it }
+        minecraftVersions.add(project.property('minecraft_version').toString())
+        requires('fabric-api')
+    }
+    curseforge {
+        accessToken = cfTokenOrDry
+        projectId = cfId.map { it.isBlank() ? '0' : it }
+        minecraftVersions.add(project.property('minecraft_version').toString())
+        client = true
+        server = true
+        requires('fabric-api')
+    }
+}
+
+// 送信を有効にしたのに設定が足りないときは、値を出さずに止める
+gradle.taskGraph.whenReady { graph ->
+    if (origamiPublish.get() && graph.allTasks.any { it.name == 'publishMods' }) {
+        def missing = []
+        if (mrToken.get().isBlank()) missing << 'origami_modrinth_token'
+        if (mrId.get().isBlank()) missing << 'origami_modrinth_id'
+        if (cfToken.get().isBlank()) missing << 'origami_curseforge_token'
+        if (cfId.get().isBlank()) missing << 'origami_curseforge_id'
+        if (!missing.isEmpty()) {
+            throw new GradleException('Publishing is enabled but these are not set in ~/.gradle/gradle.properties: ' + missing.join(', '))
+        }
     }
 }
