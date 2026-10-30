@@ -12,6 +12,7 @@ build/
 
 # Minecraft dev run
 run/
+run2/
 
 # test用の一時ファイル
 test-*/
@@ -21,3 +22,6 @@ test-*/
 *.log
 .DS_Store
 Thumbs.db
+
+# gametest (ローカル専用・リポジトリに含めない)
+src/gametest/

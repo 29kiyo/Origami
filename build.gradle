@@ -72,6 +72,37 @@ project.dependencies.add('compileOnly', paperApi) { dep ->
     }
 }
 
+// --- gametest (ローカル専用) ---
+// src/gametest が無い環境 (CI など) では何もしない。src/gametest は .gitignore 済み。
+// eula = true: ユーザーが Minecraft EULA (https://aka.ms/MinecraftEULA) に同意済み。
+if (file('src/gametest').exists()) {
+    fabricApi {
+        configureTests {
+            createSourceSet = true
+            modId = "origami-gametest"
+            enableGameTests = true
+            enableClientGameTests = false
+            eula = true
+        }
+    }
+    // テスト用プラグイン (test.gt.*) を jar にして、runGameTest のプラグインフォルダへ置く
+    tasks.register('gametestPluginJar', Jar) {
+        archiveFileName = 'OrigamiGT.jar'
+        destinationDirectory = layout.buildDirectory.dir('run/gameTest/plugins')
+        from(sourceSets.gametest.output.classesDirs) { include 'test/gt/**' }
+        from('src/gametest/plugin') { include 'plugin.yml' }
+        dependsOn tasks.named('gametestClasses')
+    }
+    tasks.matching { it.name == 'runGameTest' }.configureEach {
+        dependsOn tasks.named('gametestPluginJar')
+    }
+
+    // テストコードから org.bukkit.* を参照するため、main と同じ除外条件で compileOnly に足す
+    project.dependencies.add('gametestCompileOnly', paperApi) { dep ->
+        paperCompileExcludeGroups.each { g -> dep.exclude(group: g) }
+    }
+}
+
 processResources {
     def modVersion = project.version.toString()
     inputs.property "version", modVersion
