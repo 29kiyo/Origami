@@ -3,6 +3,7 @@
   "id": "origami",
   "version": "${version}",
   "name": "Origami",
+  "icon": "assets/origami/icon.png",
   "description": "Runs Paper/Spigot plugins on Fabric through an API translation bridge.",
   "authors": [
     "29kiyo"
