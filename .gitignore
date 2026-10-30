@@ -25,3 +25,15 @@ Thumbs.db
 
 # gametest (ローカル専用・リポジトリに含めない)
 src/gametest/
+
+# secrets (never commit)
+.env
+.env.*
+*.token
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+local.properties

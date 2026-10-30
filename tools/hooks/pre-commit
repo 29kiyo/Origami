@@ -1,0 +1,3 @@
+#!/bin/bash
+# 秘密情報の混入を防ぐ。clone ごとに一度: git config core.hooksPath tools/hooks
+exec bash "$(git rev-parse --show-toplevel)/tools/check-secrets.sh" --staged
