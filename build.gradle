@@ -129,6 +129,9 @@ tasks.withType(Jar).configureEach {
 }
 
 jar {
+    from("THIRD_PARTY_NOTICES.md") {
+        rename { "THIRD_PARTY_NOTICES_${project.archives_base_name}.md" }
+    }
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}" }
     }
