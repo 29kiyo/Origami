@@ -164,6 +164,8 @@ publishMods {
     modrinth {
         accessToken = mrTokenOrDry
         projectId = mrId.map { it.isBlank() ? 'DRYRUN' : it }
+        // 専用サーバーとシングルプレイで動き、サーバーに参加するだけのクライアントには不要 (Modrinth の server_only)
+        environment = SERVER_ONLY
         minecraftVersions.add(project.property('minecraft_version').toString())
         requires('fabric-api')
     }
