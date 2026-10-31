@@ -173,7 +173,6 @@ publishMods {
         accessToken = cfTokenOrDry
         projectId = cfId.map { it.isBlank() ? '0' : it }
         minecraftVersions.add(project.property('minecraft_version').toString())
-        client = true
         server = true
         requires('fabric-api')
     }
