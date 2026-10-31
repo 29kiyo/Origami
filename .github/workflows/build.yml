@@ -63,7 +63,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
+          PRERELEASE=""
+          if [[ "$VERSION" == *-* ]]; then PRERELEASE="--prerelease"; fi
           gh release create "$VERSION" "build/libs/origami-${VERSION}.jar" \
+            $PRERELEASE \
             --target "$GITHUB_SHA" \
             --title "Origami $VERSION" \
             --generate-notes
